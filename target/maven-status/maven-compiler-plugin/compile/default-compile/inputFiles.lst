@@ -1,0 +1,9 @@
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/ResourceGeneratorPlugin.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/config/ConfigManager.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/generator/GeneratorData.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/config/JsonUtils.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/config/GeneratorConfig.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/listener/CraftingEventListener.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/listener/PlayerInteractionListener.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/recipe/RecipeManager.java
+/Users/robert/repos/minecraft/VillagerFriedlyFarming/src/main/java/com/example/resourcegenerator/listener/BlockEventListener.java

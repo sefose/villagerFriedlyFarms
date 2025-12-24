@@ -1,0 +1,45 @@
+# Villager Friendly Farms Plugin Configuration
+
+# Plugin settings
+plugin:
+  # Enable debug logging
+  debug: false
+  
+  # Auto-save interval in minutes
+  auto-save-interval: 5
+
+# Default generator settings
+defaults:
+  # Default storage capacity in item stacks
+  storage-capacity: 27
+  
+  # Enable generator protection by default
+  protection-enabled: true
+
+# Permission settings
+permissions:
+  # Require permission to create generators
+  require-create-permission: true
+  
+  # Require permission to use generators
+  require-use-permission: true
+  
+  # Allow admins to access all generators
+  admin-override: true
+
+# Performance settings
+performance:
+  # Maximum generators per chunk
+  max-generators-per-chunk: 10
+  
+  # Maximum generators per player
+  max-generators-per-player: 50
+
+# Messages (can be customized)
+messages:
+  no-permission: "&cYou don't have permission to do that!"
+  generator-created: "&aGenerator created successfully!"
+  generator-destroyed: "&cGenerator destroyed!"
+  storage-full: "&eGenerator storage is full!"
+  invalid-recipe: "&cInvalid generator recipe!"
+  config-reloaded: "&aConfiguration reloaded successfully!"

@@ -1,0 +1,28 @@
+name: VillagerFriendlyFarms
+version: '1.0.0'
+main: com.example.resourcegenerator.ResourceGeneratorPlugin
+api-version: '1.21'
+description: A Minecraft Paper plugin for villager-friendly farming devices
+author: Plugin Developer
+website: https://example.com
+
+permissions:
+  resourcegenerator.create:
+    description: Allows creating resource generators
+    default: true
+  resourcegenerator.use:
+    description: Allows using resource generators
+    default: true
+  resourcegenerator.admin:
+    description: Allows administrative access to all generators
+    default: op
+  resourcegenerator.reload:
+    description: Allows reloading plugin configuration
+    default: op
+
+commands:
+  rg:
+    description: Main resource generator command
+    usage: /rg <reload|info|help>
+    permission: resourcegenerator.use
+    aliases: [resourcegen, generator]
