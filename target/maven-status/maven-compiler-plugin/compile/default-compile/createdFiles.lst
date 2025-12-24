@@ -4,7 +4,9 @@ com/example/resourcegenerator/config/JsonUtils.class
 com/example/resourcegenerator/ResourceGeneratorPlugin.class
 com/example/resourcegenerator/config/JsonUtils$MaterialSerializer.class
 com/example/resourcegenerator/config/ConfigManager.class
+com/example/resourcegenerator/permission/PermissionManager.class
 com/example/resourcegenerator/config/JsonUtils$ItemStackSerializer.class
+com/example/resourcegenerator/storage/DataStorage.class
 com/example/resourcegenerator/config/JsonUtils$LocationDeserializer.class
 com/example/resourcegenerator/listener/PlayerInteractionListener.class
 com/example/resourcegenerator/listener/CraftingEventListener.class
@@ -12,4 +14,6 @@ com/example/resourcegenerator/recipe/RecipeManager.class
 com/example/resourcegenerator/config/JsonUtils$LocationSerializer.class
 com/example/resourcegenerator/config/JsonUtils$ItemStackDeserializer.class
 com/example/resourcegenerator/config/GeneratorConfig.class
+com/example/resourcegenerator/manager/GeneratorManager.class
 com/example/resourcegenerator/listener/BlockEventListener.class
+com/example/resourcegenerator/command/GeneratorCommand.class

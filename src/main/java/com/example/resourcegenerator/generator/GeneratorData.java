@@ -19,6 +19,7 @@ public class GeneratorData {
     private final String generatorType;
     private final UUID owner;
     private long lastAccessedTime;
+    private long lastGenerationTime; // Track when items were last generated
     private final List<ItemStack> storedItems;
 
     @JsonCreator
@@ -28,6 +29,7 @@ public class GeneratorData {
             @JsonProperty("generatorType") String generatorType,
             @JsonProperty("owner") UUID owner,
             @JsonProperty("lastAccessedTime") long lastAccessedTime,
+            @JsonProperty("lastGenerationTime") Long lastGenerationTime,
             @JsonProperty("storedItems") List<ItemStack> storedItems) {
         
         if (id == null) {
@@ -48,6 +50,7 @@ public class GeneratorData {
         this.generatorType = generatorType.trim();
         this.owner = owner;
         this.lastAccessedTime = lastAccessedTime;
+        this.lastGenerationTime = lastGenerationTime != null ? lastGenerationTime : System.currentTimeMillis();
         this.storedItems = storedItems != null ? new ArrayList<>(storedItems) : new ArrayList<>();
     }
 
@@ -59,12 +62,14 @@ public class GeneratorData {
      * @return A new GeneratorData instance
      */
     public static GeneratorData create(Location location, String generatorType, UUID owner) {
+        long currentTime = System.currentTimeMillis();
         return new GeneratorData(
             UUID.randomUUID(),
             location,
             generatorType,
             owner,
-            System.currentTimeMillis(),
+            currentTime,
+            currentTime, // Start generation timer from creation
             new ArrayList<>()
         );
     }
@@ -110,10 +115,33 @@ public class GeneratorData {
     }
 
     /**
+     * Gets the timestamp when items were last generated.
+     * @return The last generation time in milliseconds since epoch
+     */
+    public long getLastGenerationTime() {
+        return lastGenerationTime;
+    }
+
+    /**
      * Updates the last accessed time to the current time.
      */
     public void updateLastAccessedTime() {
         this.lastAccessedTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Updates the last generation time to the current time.
+     */
+    public void updateLastGenerationTime() {
+        this.lastGenerationTime = System.currentTimeMillis();
+    }
+
+    /**
+     * Sets the last generation time to a specific timestamp.
+     * @param timestamp The timestamp in milliseconds since epoch
+     */
+    public void setLastGenerationTime(long timestamp) {
+        this.lastGenerationTime = timestamp;
     }
 
     /**
@@ -140,6 +168,23 @@ public class GeneratorData {
     public boolean addStoredItem(ItemStack item) {
         if (item == null || item.getType().isAir()) {
             return false;
+        }
+        storedItems.add(item.clone());
+        return true;
+    }
+
+    /**
+     * Adds an item to the generator's storage with capacity checking.
+     * @param item The item to add
+     * @param maxCapacity The maximum storage capacity
+     * @return True if the item was added successfully
+     */
+    public boolean addStoredItem(ItemStack item, int maxCapacity) {
+        if (item == null || item.getType().isAir()) {
+            return false;
+        }
+        if (storedItems.size() >= maxCapacity) {
+            return false; // Storage full
         }
         storedItems.add(item.clone());
         return true;
@@ -190,15 +235,15 @@ public class GeneratorData {
     }
 
     /**
-     * Calculates the time elapsed since last access in seconds.
-     * @return The elapsed time in seconds
+     * Calculates the time elapsed since last generation in seconds.
+     * @return The elapsed time since last generation in seconds
      */
-    public long getElapsedTimeSeconds() {
-        return (System.currentTimeMillis() - lastAccessedTime) / 1000;
+    public long getElapsedGenerationTimeSeconds() {
+        return (System.currentTimeMillis() - lastGenerationTime) / 1000;
     }
 
     /**
-     * Calculates how many items should be generated based on elapsed time and generation rate.
+     * Calculates how many items should be generated based on elapsed time since last generation.
      * @param generationTimeSeconds The time required to generate one item
      * @param maxCapacity The maximum storage capacity
      * @return The number of items to generate (capped by storage capacity)
@@ -208,12 +253,25 @@ public class GeneratorData {
             return 0;
         }
 
-        long elapsedSeconds = getElapsedTimeSeconds();
+        long elapsedSeconds = getElapsedGenerationTimeSeconds();
         int itemsFromTime = (int) (elapsedSeconds / generationTimeSeconds);
         int currentItemCount = getStoredItemCount();
         int availableSpace = Math.max(0, maxCapacity - currentItemCount);
         
         return Math.min(itemsFromTime, availableSpace);
+    }
+
+    /**
+     * Updates the generation time after items have been generated.
+     * This advances the generation timer by the time used for the generated items.
+     * @param itemsGenerated The number of items that were generated
+     * @param generationTimeSeconds The time per item in seconds
+     */
+    public void advanceGenerationTime(int itemsGenerated, int generationTimeSeconds) {
+        if (itemsGenerated > 0) {
+            long timeAdvanced = (long) itemsGenerated * generationTimeSeconds * 1000; // Convert to milliseconds
+            this.lastGenerationTime += timeAdvanced;
+        }
     }
 
     @Override

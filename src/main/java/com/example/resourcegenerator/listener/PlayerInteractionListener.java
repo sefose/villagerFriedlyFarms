@@ -3,6 +3,8 @@ package com.example.resourcegenerator.listener;
 import com.example.resourcegenerator.ResourceGeneratorPlugin;
 import com.example.resourcegenerator.config.GeneratorConfig;
 import com.example.resourcegenerator.generator.GeneratorData;
+import com.example.resourcegenerator.manager.GeneratorManager;
+import com.example.resourcegenerator.permission.PermissionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -22,6 +24,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -32,6 +35,8 @@ import java.util.logging.Logger;
 public class PlayerInteractionListener implements Listener {
     
     private final ResourceGeneratorPlugin plugin;
+    private final GeneratorManager generatorManager;
+    private final PermissionManager permissionManager;
     private final Logger logger;
     private final NamespacedKey generatorIdKey;
     private final NamespacedKey generatorTypeKey;
@@ -40,8 +45,10 @@ public class PlayerInteractionListener implements Listener {
     // Track which generator each player has open
     private final Map<UUID, org.bukkit.Location> openGenerators = new HashMap<>();
 
-    public PlayerInteractionListener(ResourceGeneratorPlugin plugin) {
+    public PlayerInteractionListener(ResourceGeneratorPlugin plugin, GeneratorManager generatorManager, PermissionManager permissionManager) {
         this.plugin = plugin;
+        this.generatorManager = generatorManager;
+        this.permissionManager = permissionManager;
         this.logger = plugin.getLogger();
         this.generatorIdKey = new NamespacedKey(plugin, "generator_id");
         this.generatorTypeKey = new NamespacedKey(plugin, "generator_type");
@@ -64,30 +71,22 @@ public class PlayerInteractionListener implements Listener {
 
         Player player = event.getPlayer();
 
-        // Check if this block is a generator
-        if (!isGeneratorBlock(block)) {
+        // Check if this block is a generator using the manager
+        GeneratorData generator = generatorManager.getGeneratorAt(block.getLocation());
+        if (generator == null) {
             return; // Not a generator block
         }
 
         // Cancel the event to prevent default block interaction
         event.setCancelled(true);
 
-        // Get generator information
-        String generatorId = getGeneratorId(block);
-        String generatorType = getGeneratorType(block);
-        String ownerUuid = getGeneratorOwner(block);
+        // Get generator information from the manager
+        String generatorId = generator.getId().toString();
+        String generatorType = generator.getGeneratorType();
+        UUID owner = generator.getOwner();
 
-        if (generatorId == null || generatorType == null || ownerUuid == null) {
-            logger.warning("Generator block missing metadata at " + formatLocation(block.getLocation()));
-            player.sendMessage("§cGenerator data corrupted!");
-            return;
-        }
-
-        // Check permissions
-        UUID owner = UUID.fromString(ownerUuid);
-        if (!player.getUniqueId().equals(owner) && 
-            !player.hasPermission("resourcegenerator.admin")) {
-            player.sendMessage("§cYou don't have permission to access this generator!");
+        // Check permissions using permission manager
+        if (!permissionManager.validateGeneratorAccess(player, generator, true)) {
             return;
         }
 
@@ -98,59 +97,75 @@ public class PlayerInteractionListener implements Listener {
             return;
         }
 
-        // Calculate and add accumulated resources
+        // Calculate and add accumulated resources using generation time
         long currentTime = System.currentTimeMillis();
-        long lastAccessTime = getLastAccessTime(block);
-        int currentStoredItems = getStoredItems(block);
         
-        if (lastAccessTime > 0) {
-            long elapsedSeconds = (currentTime - lastAccessTime) / 1000;
-            int itemsToGenerate = (int) (elapsedSeconds / config.getGenerationTimeSeconds());
+        // Calculate items to generate based on time since last generation
+        int itemsToGenerate = generator.calculateItemsToGenerate(
+            config.getGenerationTimeSeconds(), 
+            config.getStorageCapacity()
+        );
+        
+        // Calculate time remaining until next item
+        long elapsedGenerationSeconds = generator.getElapsedGenerationTimeSeconds();
+        long remainingSeconds = config.getGenerationTimeSeconds() - (elapsedGenerationSeconds % config.getGenerationTimeSeconds());
+        String nextItemMessage = " §8(next in " + formatElapsedTime(remainingSeconds) + ")";
+        
+        if (itemsToGenerate > 0) {
+            // Add generated items to the generator
+            for (int i = 0; i < itemsToGenerate; i++) {
+                generator.addStoredItem(config.getOutput().clone());
+            }
             
-            // Calculate time remaining until next item
-            long remainingSeconds = config.getGenerationTimeSeconds() - (elapsedSeconds % config.getGenerationTimeSeconds());
-            String nextItemMessage = " §8(next in " + formatElapsedTime(remainingSeconds) + ")";
+            // Advance the generation timer by the time used for generated items
+            generator.advanceGenerationTime(itemsToGenerate, config.getGenerationTimeSeconds());
             
-            if (itemsToGenerate > 0) {
-                // Add to existing stored items, cap at storage capacity
-                int newTotal = Math.min(currentStoredItems + itemsToGenerate, config.getStorageCapacity());
-                int actuallyGenerated = newTotal - currentStoredItems;
-                
-                // Store the new total
-                setStoredItems(block, newTotal);
-                
-                if (actuallyGenerated > 0) {
-                    String timeMessage = formatElapsedTime(elapsedSeconds);
-                    player.sendMessage("§aGenerated " + actuallyGenerated + " " + 
-                                     formatMaterialName(config.getOutput().getType()) + "(s) " +
-                                     "§7(elapsed: " + timeMessage + ")" + nextItemMessage);
-                    
-                    if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                        logger.info("Generated " + actuallyGenerated + " items for player " + player.getName());
-                    }
-                } else if (elapsedSeconds > 0) {
-                    // Show elapsed time even if no items were generated
-                    String timeMessage = formatElapsedTime(elapsedSeconds);
-                    player.sendMessage("§7No new items generated §8(elapsed: " + timeMessage + ")" + nextItemMessage);
-                }
-                
-                currentStoredItems = newTotal;
-            } else if (elapsedSeconds > 0) {
-                // Show elapsed time even if no full generation cycles completed
-                String timeMessage = formatElapsedTime(elapsedSeconds);
-                player.sendMessage("§7No new items generated §8(elapsed: " + timeMessage + ")" + nextItemMessage);
+            // Update the generator in the manager
+            generatorManager.updateGenerator(generator);
+            
+            // Update stored items count and PDC
+            int currentStoredItems = generator.getStoredItemCount();
+            setStoredItems(block, currentStoredItems);
+            
+            String timeMessage = formatElapsedTime(elapsedGenerationSeconds);
+            player.sendMessage("§aGenerated " + itemsToGenerate + " " + 
+                             formatMaterialName(config.getOutput().getType()) + "(s) " +
+                             "§7(elapsed: " + timeMessage + ")" + nextItemMessage);
+            
+            if (plugin.getConfig().getBoolean("plugin.debug", false)) {
+                logger.info("Generated " + itemsToGenerate + " items for player " + player.getName());
+            }
+        } else if (elapsedGenerationSeconds > 0) {
+            // Show elapsed time even if no full generation cycles completed
+            String timeMessage = formatElapsedTime(elapsedGenerationSeconds);
+            int currentItemCount = generator.getStoredItemCount();
+            
+            if (currentItemCount >= config.getStorageCapacity()) {
+                // Storage is full
+                player.sendMessage("§c⚠ Storage full! No items generated. " +
+                                 "§7(elapsed: " + timeMessage + ", " + 
+                                 currentItemCount + "/" + config.getStorageCapacity() + ")" + nextItemMessage);
+            } else {
+                // Not enough time has passed yet
+                String storageStatus = " §7(" + currentItemCount + "/" + config.getStorageCapacity() + ")";
+                player.sendMessage("§7No new items generated §8(elapsed: " + timeMessage + ")" + 
+                                 storageStatus + nextItemMessage);
             }
         } else {
-            // First time opening - show welcome message
+            // First time opening - show welcome message with storage info
+            int currentItemCount = generator.getStoredItemCount();
             player.sendMessage("§eWelcome to your " + formatGeneratorName(generatorType) + "! " +
                              "§7Items will generate every " + config.getGenerationTimeSeconds() + " seconds.");
+            player.sendMessage("§7Storage: " + currentItemCount + "/" + config.getStorageCapacity() + " items");
         }
 
-        // Update last access time
+        // Update last access time (but keep generation time separate)
+        generator.updateLastAccessedTime();
+        generatorManager.updateGenerator(generator);
         setLastAccessTime(block, currentTime);
 
         // Open generator interface with actual stored items
-        openGeneratorInterface(player, config, generatorType, currentStoredItems, block.getLocation());
+        openGeneratorInterface(player, config, generatorType, generator, block.getLocation());
         
         if (plugin.getConfig().getBoolean("plugin.debug", false)) {
             logger.info("Player " + player.getName() + " opened generator: " + generatorType);
@@ -160,7 +175,7 @@ public class PlayerInteractionListener implements Listener {
     /**
      * Opens the generator interface for the player.
      */
-    private void openGeneratorInterface(Player player, GeneratorConfig config, String generatorType, int storedItems, org.bukkit.Location generatorLocation) {
+    private void openGeneratorInterface(Player player, GeneratorConfig config, String generatorType, GeneratorData generator, org.bukkit.Location generatorLocation) {
         // Track which generator this player has open
         openGenerators.put(player.getUniqueId(), generatorLocation);
         
@@ -168,32 +183,33 @@ public class PlayerInteractionListener implements Listener {
         Inventory inventory = Bukkit.createInventory(null, 27, 
             "§6" + formatGeneratorName(generatorType) + " Generator");
 
-        // Add the actual stored items
-        if (storedItems > 0) {
-            int remainingItems = storedItems;
-            int slot = 0;
-            
-            // Fill inventory with stored items (max 64 per stack)
-            while (remainingItems > 0 && slot < 26) { // Leave slot 26 for info
-                int stackSize = Math.min(remainingItems, 64);
-                ItemStack itemStack = new ItemStack(config.getOutput().getType(), stackSize);
-                inventory.setItem(slot, itemStack);
-                remainingItems -= stackSize;
-                slot++;
-            }
+        // Add the actual stored items from the generator
+        List<ItemStack> storedItems = generator.getStoredItems();
+        for (int i = 0; i < Math.min(storedItems.size(), 26); i++) { // Leave slot 26 for info
+            inventory.setItem(i, storedItems.get(i));
         }
 
-        // Add info item in the last slot
+        // Add info item in the last slot with storage status
         ItemStack info = new ItemStack(Material.PAPER);
         info.editMeta(meta -> {
-            meta.setDisplayName("§eGenerator Info");
+            int storedCount = generator.getStoredItemCount();
+            boolean isNearFull = storedCount >= (config.getStorageCapacity() * 0.8);
+            boolean isFull = storedCount >= config.getStorageCapacity();
+            
+            String storageColor = isFull ? "§c" : (isNearFull ? "§e" : "§a");
+            String storageStatus = isFull ? " §c[FULL]" : (isNearFull ? " §e[NEARLY FULL]" : "");
+            
+            meta.setDisplayName("§eGenerator Info" + storageStatus);
             meta.setLore(java.util.Arrays.asList(
                 "§7Type: §f" + formatGeneratorName(generatorType),
                 "§7Output: §f" + config.getOutput().getAmount() + "x " + 
                     formatMaterialName(config.getOutput().getType()),
                 "§7Generation Time: §f" + config.getGenerationTimeSeconds() + "s per item",
                 "§7Storage Capacity: §f" + config.getStorageCapacity() + " items",
-                "§7Currently Stored: §f" + storedItems + " items",
+                "§7Currently Stored: " + storageColor + storedCount + "§7/" + config.getStorageCapacity() + " items",
+                "",
+                isFull ? "§c⚠ Storage is full! No new items will generate." :
+                        (isNearFull ? "§eStorage is nearly full!" : "§aStorage has plenty of space."),
                 "",
                 "§eThis generator produces items over time!",
                 "§eCheck back later for more resources."
@@ -266,24 +282,31 @@ public class PlayerInteractionListener implements Listener {
             return;
         }
 
+        // Get the generator from the manager
+        GeneratorData generator = generatorManager.getGeneratorAt(generatorLocation);
+        if (generator == null) {
+            return;
+        }
+
+        // Clear the generator's stored items and add the remaining items from inventory
+        generator.clearStoredItems();
+        
         // Count remaining items in the inventory (excluding info item in slot 26)
-        int remainingItems = 0;
         for (int i = 0; i < 26; i++) {
             ItemStack item = inventory.getItem(i);
             if (item != null && !item.getType().isAir()) {
-                remainingItems += item.getAmount();
+                generator.addStoredItem(item);
             }
         }
 
-        // Update the stored count in the generator block
+        // Update the generator in the manager and PDC
+        generatorManager.updateGenerator(generator);
         Block generatorBlock = generatorLocation.getBlock();
-        if (isGeneratorBlock(generatorBlock)) {
-            setStoredItems(generatorBlock, remainingItems);
-            
-            if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                logger.info("Updated generator at " + formatLocation(generatorLocation) + 
-                           " - remaining items: " + remainingItems);
-            }
+        setStoredItems(generatorBlock, generator.getStoredItemCount());
+        
+        if (plugin.getConfig().getBoolean("plugin.debug", false)) {
+            logger.info("Updated generator at " + formatLocation(generatorLocation) + 
+                       " - remaining items: " + generator.getStoredItemCount());
         }
     }
 

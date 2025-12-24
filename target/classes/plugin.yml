@@ -19,10 +19,13 @@ permissions:
   resourcegenerator.reload:
     description: Allows reloading plugin configuration
     default: op
+  resourcegenerator.give:
+    description: Allows giving generator items to players
+    default: op
 
 commands:
   rg:
     description: Main resource generator command
-    usage: /rg <reload|info|help>
+    usage: /rg <reload|info|help|give>
     permission: resourcegenerator.use
     aliases: [resourcegen, generator]

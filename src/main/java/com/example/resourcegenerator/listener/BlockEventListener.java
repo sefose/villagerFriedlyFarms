@@ -3,6 +3,8 @@ package com.example.resourcegenerator.listener;
 import com.example.resourcegenerator.ResourceGeneratorPlugin;
 import com.example.resourcegenerator.config.GeneratorConfig;
 import com.example.resourcegenerator.generator.GeneratorData;
+import com.example.resourcegenerator.manager.GeneratorManager;
+import com.example.resourcegenerator.permission.PermissionManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
@@ -17,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Logger;
 
@@ -27,14 +30,18 @@ public class BlockEventListener implements Listener {
     
     private final ResourceGeneratorPlugin plugin;
     private final CraftingEventListener craftingListener;
+    private final GeneratorManager generatorManager;
+    private final PermissionManager permissionManager;
     private final Logger logger;
     private final NamespacedKey generatorIdKey;
     private final NamespacedKey generatorTypeKey;
     private final NamespacedKey generatorOwnerKey;
 
-    public BlockEventListener(ResourceGeneratorPlugin plugin, CraftingEventListener craftingListener) {
+    public BlockEventListener(ResourceGeneratorPlugin plugin, CraftingEventListener craftingListener, GeneratorManager generatorManager, PermissionManager permissionManager) {
         this.plugin = plugin;
         this.craftingListener = craftingListener;
+        this.generatorManager = generatorManager;
+        this.permissionManager = permissionManager;
         this.logger = plugin.getLogger();
         this.generatorIdKey = new NamespacedKey(plugin, "generator_id");
         this.generatorTypeKey = new NamespacedKey(plugin, "generator_type");
@@ -73,21 +80,38 @@ public class BlockEventListener implements Listener {
         }
 
         // Check permissions
-        if (!player.hasPermission("resourcegenerator.create")) {
+        if (!permissionManager.validateGeneratorCreation(player, true)) {
             event.setCancelled(true);
-            player.sendMessage("§cYou don't have permission to place generators!");
             return;
         }
 
-        // TODO: Check generator limits (max per chunk, max per player)
-        // This will be implemented when we add the GeneratorManager
+        // Check if a generator already exists at this location
+        if (generatorManager.hasGeneratorAt(block.getLocation())) {
+            event.setCancelled(true);
+            player.sendMessage("§cA generator already exists at this location!");
+            return;
+        }
 
-        // Create generator data
-        GeneratorData generatorData = GeneratorData.create(
+        // Check generator limits (unless player can bypass)
+        if (!permissionManager.canBypassLimits(player) && 
+            !generatorManager.canCreateGenerator(block.getLocation(), player.getUniqueId())) {
+            event.setCancelled(true);
+            player.sendMessage("§cCannot place generator: limit reached!");
+            return;
+        }
+
+        // Create generator data and register with manager
+        GeneratorData generatorData = generatorManager.createGenerator(
             block.getLocation(),
             generatorType,
             player.getUniqueId()
         );
+
+        if (generatorData == null) {
+            event.setCancelled(true);
+            player.sendMessage("§cFailed to create generator!");
+            return;
+        }
 
         // Add persistent data to the block
         if (block.getState() instanceof org.bukkit.block.TileState) {
@@ -113,8 +137,7 @@ public class BlockEventListener implements Listener {
             }
         }
 
-        // TODO: Register the generator with GeneratorManager
-        // This will be implemented in the next task
+        // The generator is already registered with the manager
 
         player.sendMessage("§aGenerator placed successfully! Type: " + 
                           formatGeneratorName(generatorType));
@@ -134,34 +157,37 @@ public class BlockEventListener implements Listener {
         Block block = event.getBlock();
 
         // Check if this block is a generator
-        if (!isGeneratorBlock(block)) {
+        GeneratorData generator = generatorManager.getGeneratorAt(block.getLocation());
+        if (generator == null) {
             return; // Not a generator block
         }
 
-        // Get generator information
-        String generatorId = getGeneratorId(block);
-        String generatorType = getGeneratorType(block);
-        String ownerUuid = getGeneratorOwner(block);
+        // Get generator information from the manager
+        String generatorId = generator.getId().toString();
+        String generatorType = generator.getGeneratorType();
+        UUID owner = generator.getOwner();
 
-        if (generatorId == null || generatorType == null || ownerUuid == null) {
-            logger.warning("Generator block missing metadata at " + formatLocation(block.getLocation()));
-            return;
-        }
-
-        // Check permissions
-        UUID owner = UUID.fromString(ownerUuid);
-        if (!player.getUniqueId().equals(owner) && 
-            !player.hasPermission("resourcegenerator.admin")) {
+        // Check permissions using permission manager
+        if (!permissionManager.validateGeneratorBreaking(player, generator, true)) {
             event.setCancelled(true);
-            player.sendMessage("§cYou don't have permission to break this generator!");
             return;
         }
 
-        // TODO: Handle generator destruction with GeneratorManager
-        // - Remove generator data
-        // - Drop stored items
-        // - Clean up persistent data
-        // This will be implemented when we add the GeneratorManager
+        // Handle generator destruction with GeneratorManager
+        GeneratorData destroyedGenerator = generatorManager.destroyGenerator(generator.getId());
+        if (destroyedGenerator != null) {
+            // Drop stored items
+            List<org.bukkit.inventory.ItemStack> storedItems = destroyedGenerator.getStoredItems();
+            for (org.bukkit.inventory.ItemStack item : storedItems) {
+                if (item != null && !item.getType().isAir()) {
+                    block.getWorld().dropItemNaturally(block.getLocation(), item);
+                }
+            }
+            
+            if (!storedItems.isEmpty()) {
+                player.sendMessage("§eDropped " + storedItems.size() + " stored items");
+            }
+        }
 
         player.sendMessage("§cGenerator destroyed: " + formatGeneratorName(generatorType));
         

@@ -2,6 +2,7 @@ package com.example.resourcegenerator.command;
 
 import com.example.resourcegenerator.ResourceGeneratorPlugin;
 import com.example.resourcegenerator.config.GeneratorConfig;
+import com.example.resourcegenerator.permission.PermissionManager;
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -18,10 +19,12 @@ import org.bukkit.NamespacedKey;
 public class GeneratorCommand implements CommandExecutor {
     
     private final ResourceGeneratorPlugin plugin;
+    private final PermissionManager permissionManager;
     private final NamespacedKey generatorTypeKey;
 
     public GeneratorCommand(ResourceGeneratorPlugin plugin) {
         this.plugin = plugin;
+        this.permissionManager = plugin.getPermissionManager();
         this.generatorTypeKey = new NamespacedKey(plugin, "generator_type");
     }
 
@@ -58,19 +61,34 @@ public class GeneratorCommand implements CommandExecutor {
     }
 
     private boolean handleReload(CommandSender sender) {
-        if (!sender.hasPermission("resourcegenerator.reload")) {
-            sender.sendMessage("§cYou don't have permission to reload the plugin.");
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players.");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        if (!permissionManager.canReload(player)) {
+            sender.sendMessage(permissionManager.getPermissionErrorMessage(PermissionManager.PERMISSION_RELOAD));
             return true;
         }
 
+        sender.sendMessage("§eReloading plugin configuration and recipes...");
         plugin.getConfigManager().reloadConfigurations();
-        sender.sendMessage("§aConfiguration reloaded successfully!");
+        plugin.getRecipeManager().reloadRecipes();
+        sender.sendMessage("§aConfiguration and recipes reloaded successfully!");
+        sender.sendMessage("§7Players may need to close and reopen their recipe book to see changes.");
         return true;
     }
 
     private boolean handleGive(CommandSender sender, String[] args) {
-        if (!sender.hasPermission("resourcegenerator.give")) {
-            sender.sendMessage("§cYou don't have permission to give generators.");
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by players.");
+            return true;
+        }
+        
+        Player player = (Player) sender;
+        if (!permissionManager.canGiveGenerators(player)) {
+            sender.sendMessage(permissionManager.getPermissionErrorMessage(PermissionManager.PERMISSION_GIVE));
             return true;
         }
 

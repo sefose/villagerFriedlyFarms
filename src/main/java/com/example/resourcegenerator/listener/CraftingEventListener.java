@@ -3,6 +3,7 @@ package com.example.resourcegenerator.listener;
 import com.example.resourcegenerator.ResourceGeneratorPlugin;
 import com.example.resourcegenerator.config.GeneratorConfig;
 import com.example.resourcegenerator.generator.GeneratorData;
+import com.example.resourcegenerator.permission.PermissionManager;
 import com.example.resourcegenerator.recipe.RecipeManager;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -28,14 +29,16 @@ public class CraftingEventListener implements Listener {
     
     private final ResourceGeneratorPlugin plugin;
     private final RecipeManager recipeManager;
+    private final PermissionManager permissionManager;
     private final Logger logger;
     private final NamespacedKey generatorIdKey;
     private final NamespacedKey generatorTypeKey;
     private final NamespacedKey generatorOwnerKey;
 
-    public CraftingEventListener(ResourceGeneratorPlugin plugin, RecipeManager recipeManager) {
+    public CraftingEventListener(ResourceGeneratorPlugin plugin, RecipeManager recipeManager, PermissionManager permissionManager) {
         this.plugin = plugin;
         this.recipeManager = recipeManager;
+        this.permissionManager = permissionManager;
         this.logger = plugin.getLogger();
         this.generatorIdKey = new NamespacedKey(plugin, "generator_id");
         this.generatorTypeKey = new NamespacedKey(plugin, "generator_type");
@@ -94,9 +97,8 @@ public class CraftingEventListener implements Listener {
         }
 
         // Check permissions
-        if (!player.hasPermission("resourcegenerator.create")) {
+        if (!permissionManager.validateGeneratorCreation(player, true)) {
             event.setCancelled(true);
-            player.sendMessage("§cYou don't have permission to create generators!");
             return;
         }
 

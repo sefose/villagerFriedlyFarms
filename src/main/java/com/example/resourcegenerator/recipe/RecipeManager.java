@@ -4,7 +4,12 @@ import com.example.resourcegenerator.ResourceGeneratorPlugin;
 import com.example.resourcegenerator.config.ConfigManager;
 import com.example.resourcegenerator.config.GeneratorConfig;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,12 +25,14 @@ public class RecipeManager {
     private final ConfigManager configManager;
     private final Logger logger;
     private final Map<String, GeneratorConfig> registeredRecipes;
+    private final NamespacedKey generatorTypeKey;
 
     public RecipeManager(ResourceGeneratorPlugin plugin) {
         this.plugin = plugin;
         this.configManager = plugin.getConfigManager();
         this.logger = plugin.getLogger();
         this.registeredRecipes = new HashMap<>();
+        this.generatorTypeKey = new NamespacedKey(plugin, "generator_type");
     }
 
     /**
@@ -33,6 +40,7 @@ public class RecipeManager {
      */
     public void initialize() {
         loadAllRecipes();
+        registerBukkitRecipes();
         logger.info("Recipe manager initialized with " + registeredRecipes.size() + " recipes");
     }
 
@@ -68,6 +76,141 @@ public class RecipeManager {
 
         registeredRecipes.put(config.getName(), config);
         logger.info("Registered recipe for generator: " + config.getName());
+    }
+
+    /**
+     * Registers all generator recipes with Bukkit so they appear in the recipe book.
+     */
+    private void registerBukkitRecipes() {
+        // Remove existing generator recipes first
+        removeExistingGeneratorRecipes();
+        
+        for (GeneratorConfig config : registeredRecipes.values()) {
+            try {
+                registerBukkitRecipe(config);
+            } catch (Exception e) {
+                logger.warning("Failed to register Bukkit recipe for " + config.getName() + ": " + e.getMessage());
+            }
+        }
+        
+        logger.info("Registered " + registeredRecipes.size() + " recipes with Bukkit");
+    }
+
+    /**
+     * Removes existing generator recipes from Bukkit.
+     */
+    private void removeExistingGeneratorRecipes() {
+        try {
+            // Remove recipes by their namespaced keys
+            for (String generatorName : registeredRecipes.keySet()) {
+                NamespacedKey recipeKey = new NamespacedKey(plugin, generatorName + "_recipe");
+                plugin.getServer().removeRecipe(recipeKey);
+            }
+        } catch (Exception e) {
+            logger.warning("Failed to remove existing generator recipes: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Registers a single generator recipe with Bukkit.
+     * @param config The generator configuration
+     */
+    private void registerBukkitRecipe(GeneratorConfig config) {
+        // Create the result item (generator block with metadata)
+        ItemStack result = new ItemStack(config.getBlockType(), 1);
+        result.editMeta(meta -> {
+            meta.setDisplayName("§6" + formatGeneratorName(config.getName()));
+            meta.setLore(java.util.Arrays.asList(
+                "§7Generator Type: §f" + config.getName(),
+                "§7Output: §f" + config.getOutput().getAmount() + "x " + 
+                    formatMaterialName(config.getOutput().getType()),
+                "§7Generation Time: §f" + config.getGenerationTimeSeconds() + "s",
+                "§7Storage Capacity: §f" + config.getStorageCapacity() + " items",
+                "",
+                "§ePlace this block to create a generator!"
+            ));
+
+            // Add persistent data to identify as generator
+            PersistentDataContainer pdc = meta.getPersistentDataContainer();
+            pdc.set(generatorTypeKey, PersistentDataType.STRING, config.getName());
+        });
+
+        // Create the shaped recipe
+        NamespacedKey recipeKey = new NamespacedKey(plugin, config.getName() + "_recipe");
+        ShapedRecipe recipe = new ShapedRecipe(recipeKey, result);
+        
+        // Set the recipe pattern (3x3 grid)
+        recipe.shape("ABC", "DEF", "GHI");
+        
+        // Map each position to the required ingredient
+        ItemStack[] recipeItems = config.getRecipe();
+        char[] keys = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'};
+        
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = recipeItems[i];
+            if (item != null && item.getType() != Material.AIR) {
+                // Handle special cases for beds (accept any bed type)
+                if (isBedType(item.getType())) {
+                    // Use a specific bed type for the recipe display
+                    recipe.setIngredient(keys[i], Material.RED_BED);
+                } else {
+                    recipe.setIngredient(keys[i], item.getType());
+                }
+            } else {
+                // Empty slot - use air
+                recipe.setIngredient(keys[i], Material.AIR);
+            }
+        }
+
+        // Add the recipe to the server
+        plugin.getServer().addRecipe(recipe);
+        
+        logger.info("Registered Bukkit recipe for: " + config.getName());
+    }
+
+    /**
+     * Checks if a material is a bed type.
+     * @param material The material to check
+     * @return True if the material is any type of bed
+     */
+    private boolean isBedType(Material material) {
+        return material.name().endsWith("_BED");
+    }
+
+    /**
+     * Formats a generator name for display.
+     * @param name The generator name
+     * @return A formatted display name
+     */
+    private String formatGeneratorName(String name) {
+        String[] words = name.replace("_", " ").toLowerCase().split(" ");
+        StringBuilder result = new StringBuilder();
+        for (String word : words) {
+            if (word.length() > 0) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                      .append(word.substring(1))
+                      .append(" ");
+            }
+        }
+        return result.toString().trim();
+    }
+
+    /**
+     * Formats a material name for display.
+     * @param material The material
+     * @return A formatted display name
+     */
+    private String formatMaterialName(Material material) {
+        String[] words = material.name().replace("_", " ").toLowerCase().split(" ");
+        StringBuilder result = new StringBuilder();
+        for (String word : words) {
+            if (word.length() > 0) {
+                result.append(Character.toUpperCase(word.charAt(0)))
+                      .append(word.substring(1))
+                      .append(" ");
+            }
+        }
+        return result.toString().trim();
     }
 
     /**
@@ -213,7 +356,18 @@ public class RecipeManager {
     public void reloadRecipes() {
         logger.info("Reloading generator recipes...");
         loadAllRecipes();
+        registerBukkitRecipes();
         logger.info("Reloaded " + registeredRecipes.size() + " generator recipes");
+    }
+
+    /**
+     * Shuts down the recipe manager and cleans up Bukkit recipes.
+     */
+    public void shutdown() {
+        logger.info("Shutting down recipe manager...");
+        removeExistingGeneratorRecipes();
+        registeredRecipes.clear();
+        logger.info("Recipe manager shutdown complete");
     }
 
     /**
