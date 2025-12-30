@@ -1,31 +1,37 @@
 name: VillagerFriendlyFarms
 version: '1.0.0'
-main: com.example.resourcegenerator.ResourceGeneratorPlugin
+main: com.example.villagerfriendlyfarms.VillagerFriendlyFarmsPlugin
 api-version: '1.21'
 description: A Minecraft Paper plugin for villager-friendly farming devices
 author: Plugin Developer
 website: https://example.com
 
 permissions:
-  resourcegenerator.create:
-    description: Allows creating resource generators
+  villagerfriendlyfarms.create:
+    description: Allows creating villager-friendly farms
     default: true
-  resourcegenerator.use:
-    description: Allows using resource generators
+  villagerfriendlyfarms.use:
+    description: Allows using villager-friendly farms
     default: true
-  resourcegenerator.admin:
-    description: Allows administrative access to all generators
+  villagerfriendlyfarms.admin:
+    description: Allows administrative access to all farms
     default: op
-  resourcegenerator.reload:
+  villagerfriendlyfarms.reload:
     description: Allows reloading plugin configuration
     default: op
-  resourcegenerator.give:
-    description: Allows giving generator items to players
+  villagerfriendlyfarms.give:
+    description: Allows giving farm items to players
+    default: op
+  villagerfriendlyfarms.bypass.limits:
+    description: Allows bypassing farm limits
+    default: op
+  villagerfriendlyfarms.access.all:
+    description: Allows accessing any player's farms
     default: op
 
 commands:
-  rg:
-    description: Main resource generator command
-    usage: /rg <reload|info|help|give>
-    permission: resourcegenerator.use
-    aliases: [resourcegen, generator]
+  vff:
+    description: Main villager friendly farms command
+    usage: /vff <reload|info|help|give|list>
+    permission: villagerfriendlyfarms.use
+    aliases: [villagerfarms, farms]

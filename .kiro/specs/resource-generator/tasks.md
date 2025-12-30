@@ -1,8 +1,8 @@
-# Implementation Plan: Resource Generator Plugin
+# Implementation Plan: Villager Friendly Farms Plugin
 
 ## Overview
 
-This implementation plan breaks down the resource generator plugin into discrete coding tasks. Each task builds incrementally toward a complete Paper 1.21.11 plugin that allows players to craft generator devices using specific recipes. The generators appear as custom blocks and accumulate resources over time using a passive calculation system.
+This implementation plan breaks down the Villager Friendly Farms plugin into discrete coding tasks. Each task builds incrementally toward a complete Paper 1.21.11 plugin that allows players to craft villager-friendly farming devices using specific recipes. The farms appear as custom blocks and accumulate resources over time using a passive calculation system.
 
 ## Tasks
 
@@ -48,11 +48,16 @@ This implementation plan breaks down the resource generator plugin into discrete
     - Validate crafting patterns and handle material consumption
     - _Requirements: 1.2, 1.4, 1.5_
 
-  - [ ]* 3.4 Write property test for valid crafting behavior
+  - [x] 3.4 Add recipe book integration
+    - Register Bukkit recipes so farms appear in recipe book
+    - Add recipe cleanup on shutdown and reload functionality
+    - _Requirements: Recipe discoverability and user experience_
+
+  - [ ]* 3.5 Write property test for valid crafting behavior
     - **Property 2: Valid Crafting Behavior**
     - **Validates: Requirements 1.4**
 
-  - [ ]* 3.5 Write property test for invalid crafting protection
+  - [ ]* 3.6 Write property test for invalid crafting protection
     - **Property 3: Invalid Crafting Protection**
     - **Validates: Requirements 1.5**
 
@@ -69,11 +74,17 @@ This implementation plan breaks down the resource generator plugin into discrete
     - Open chest-like inventory interface for generators
     - _Requirements: 2.2, 2.3, 2.4, 8.1, 8.2, 8.5_
 
-  - [ ]* 4.3 Write property test for time-based resource calculation
+  - [x] 4.3 Fix generation timer logic
+    - Implement separate lastGenerationTime tracking
+    - Add advanceGenerationTime() method for proper timer advancement
+    - Ensure continuous generation based on real elapsed time
+    - _Requirements: Proper time-based resource calculation_
+
+  - [ ]* 4.4 Write property test for time-based resource calculation
     - **Property 4: Time-Based Resource Calculation**
     - **Validates: Requirements 2.2, 2.3, 2.4, 3.2, 3.3, 4.2, 4.3, 4.4**
 
-  - [ ]* 4.4 Write property test for generator interface consistency
+  - [ ]* 4.5 Write property test for generator interface consistency
     - **Property 7: Generator Interface Consistency**
     - **Validates: Requirements 8.1, 8.2, 8.5**
 
@@ -83,7 +94,7 @@ This implementation plan breaks down the resource generator plugin into discrete
     - Add administrative functions for managing generators
     - _Requirements: 6.4, 10.1, 10.2, 10.3_
 
-- [ ] 6. Implement generator management system
+- [x] 6. Implement generator management system
   - [x] 6.1 Create GeneratorManager class
     - Centralize generator creation, destruction, and registry
     - Implement generator limits (per chunk, per player)
@@ -100,7 +111,7 @@ This implementation plan breaks down the resource generator plugin into discrete
     - Ensure proper generator registration and cleanup
     - _Requirements: 2.1, 2.5, 9.3_
 
-- [ ] 7. Implement data persistence and storage
+- [x] 7. Implement data persistence and storage
   - [x] 7.1 Create DataStorage class using file storage
     - Implement generator data saving and loading to JSON files
     - Handle server restart scenarios and data recovery
@@ -121,7 +132,7 @@ This implementation plan breaks down the resource generator plugin into discrete
     - **Property 10: Generator Cleanup Consistency**
     - **Validates: Requirements 9.3, 11.5**
 
-- [ ] 8. Implement permission system and security
+- [x] 8. Implement permission system and security
   - [x] 8.1 Create PermissionManager class
     - Implement permission checking for all generator operations
     - Integrate with Bukkit permission system
@@ -142,7 +153,7 @@ This implementation plan breaks down the resource generator plugin into discrete
     - **Property 12: Block Protection Enforcement**
     - **Validates: Requirements 11.1, 11.2**
 
-- [ ] 9. Implement storage capacity management
+- [x] 9. Implement storage capacity management
   - [x] 9.1 Add storage capacity limits to generator interface
     - Prevent resource generation when storage is full
     - Handle partial resource generation when storage has limited space
@@ -153,7 +164,7 @@ This implementation plan breaks down the resource generator plugin into discrete
     - **Property 8: Storage Capacity Management**
     - **Validates: Requirements 8.4**
 
-- [ ] 10. Integration and final wiring
+- [x] 10. Integration and final wiring
   - [x] 10.1 Wire all components together in main plugin class
     - Initialize GeneratorManager, DataStorage, and PermissionManager
     - Ensure proper startup and shutdown sequences
@@ -172,7 +183,30 @@ This implementation plan breaks down the resource generator plugin into discrete
     - Add detailed logging for debugging and monitoring
     - _Requirements: 9.4, 10.4_
 
-- [x] 11. Final checkpoint - Ensure all tests pass
+- [x] 11. Update documentation and branding
+  - [x] 11.1 Update README.md to use "Villager Friendly Farms" terminology
+    - Replace "Resource Generator" with "Villager Friendly Farms"
+    - Update command examples to use /vff instead of /rg
+    - Update permission examples to use villagerfriendlyfarms prefix
+    - _Requirements: Consistent branding and user documentation_
+
+  - [x] 11.2 Update plugin.yml with new branding
+    - Change plugin name to VillagerFriendlyFarms
+    - Update commands to use /vff instead of /rg
+    - Update permissions to use villagerfriendlyfarms prefix
+    - _Requirements: Consistent branding and command structure_
+
+  - [x] 11.3 Complete code refactoring to match new branding
+    - [x] Update command registration from "rg" to "vff" in ResourceGeneratorPlugin.java
+    - [x] Update all permission constants in PermissionManager.java to use "villagerfriendlyfarms" prefix
+    - [x] Update GeneratorCommand.java to use new permission constants and command references
+    - [x] Rename package structure from "resourcegenerator" to "villagerfriendlyfarms"
+    - [x] Rename main plugin class from ResourceGeneratorPlugin to VillagerFriendlyFarmsPlugin
+    - [x] Update all import statements and class references throughout codebase
+    - [x] Update Maven configuration and build files
+    - _Requirements: Complete code consistency with documentation and plugin.yml_
+
+- [x] 12. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
