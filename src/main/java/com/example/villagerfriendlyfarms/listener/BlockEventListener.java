@@ -20,8 +20,6 @@ import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakByEntityEvent;
-import org.bukkit.event.entity.VillagerAcquireTradeEvent;
-import org.bukkit.event.entity.VillagerCareerChangeEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -134,20 +132,6 @@ public class BlockEventListener implements Listener {
             pdc.set(lastAccessKey, PersistentDataType.LONG, System.currentTimeMillis());
             
             tileState.update();
-            
-            // Make furnace/blast furnace appear "lit" to distinguish it as a generator
-            if (block.getType() == Material.FURNACE) {
-                org.bukkit.block.data.type.Furnace furnaceData = 
-                    (org.bukkit.block.data.type.Furnace) block.getBlockData();
-                furnaceData.setLit(true);
-                block.setBlockData(furnaceData);
-            } else if (block.getType() == Material.BLAST_FURNACE) {
-                // Blast furnaces use the same data type as regular furnaces
-                org.bukkit.block.data.type.Furnace blastFurnaceData = 
-                    (org.bukkit.block.data.type.Furnace) block.getBlockData();
-                blastFurnaceData.setLit(true);
-                block.setBlockData(blastFurnaceData);
-            }
         }
 
         // Add visual indicator for all farms (item frame with output item)
@@ -318,11 +302,8 @@ public class BlockEventListener implements Listener {
      * @param player The player who placed the farm
      */
     private void addFarmVisualIndicator(Block farmBlock, GeneratorConfig config, Player player) {
-        // Add item frames for all farm types (furnace, blast furnace, composter, barrel)
-        if (farmBlock.getType() != Material.BARREL && 
-            farmBlock.getType() != Material.COMPOSTER && 
-            farmBlock.getType() != Material.FURNACE &&
-            farmBlock.getType() != Material.BLAST_FURNACE) {
+        // Add item frames for all farm types (all use chests now)
+        if (farmBlock.getType() != Material.CHEST) {
             return;
         }
 
@@ -533,95 +514,6 @@ public class BlockEventListener implements Listener {
             
             // For non-player causes (like explosions), also protect the frame
             event.setCancelled(true);
-        }
-    }
-
-    /**
-     * Prevents villagers from claiming generator blocks as workstations.
-     */
-    @EventHandler(priority = EventPriority.HIGH)
-    public void onVillagerAcquireTrade(VillagerAcquireTradeEvent event) {
-        // Get the villager entity
-        Villager villager = (Villager) event.getEntity();
-        
-        // Check if villager already has a profession
-        if (villager.getProfession() != Villager.Profession.NONE) {
-            return; // Villager already has a profession
-        }
-
-        // Check if there's a generator block nearby that the villager might be trying to claim
-        Location villagerLocation = villager.getLocation();
-        
-        // Check blocks in a 3x3x3 area around the villager for generator blocks
-        for (int x = -1; x <= 1; x++) {
-            for (int y = -1; y <= 1; y++) {
-                for (int z = -1; z <= 1; z++) {
-                    Location checkLocation = villagerLocation.clone().add(x, y, z);
-                    Block block = checkLocation.getBlock();
-                    
-                    // Check if this block is a generator
-                    if (generatorManager.hasGeneratorAt(block.getLocation())) {
-                        // This is a generator block, prevent the villager from claiming it
-                        event.setCancelled(true);
-                        return;
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Prevents villagers from changing careers by claiming generator blocks as workstations.
-     */
-    @EventHandler(priority = EventPriority.HIGHEST)
-    public void onVillagerCareerChange(VillagerCareerChangeEvent event) {
-        Villager villager = event.getEntity();
-        
-        // If the villager is trying to change to a profession (not becoming unemployed)
-        if (event.getProfession() != Villager.Profession.NONE) {
-            // Check if there's a generator block nearby that might be the workstation
-            Location villagerLocation = villager.getLocation();
-            
-            // Check blocks in a 5x5x5 area around the villager for generator blocks
-            for (int x = -2; x <= 2; x++) {
-                for (int y = -2; y <= 2; y++) {
-                    for (int z = -2; z <= 2; z++) {
-                        Location checkLocation = villagerLocation.clone().add(x, y, z);
-                        Block block = checkLocation.getBlock();
-                        
-                        // Check if this block is a generator
-                        if (generatorManager.hasGeneratorAt(block.getLocation())) {
-                            // Check if this block type matches the profession the villager is trying to get
-                            Material blockType = block.getType();
-                            Villager.Profession targetProfession = event.getProfession();
-                            
-                            if (isWorkstationForProfession(blockType, targetProfession)) {
-                                // This villager is trying to claim our generator as a workstation
-                                event.setCancelled(true);
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    /**
-     * Checks if a block type is a workstation for a specific villager profession.
-     */
-    private boolean isWorkstationForProfession(Material blockType, Villager.Profession profession) {
-        switch (profession) {
-            case FISHERMAN:
-                return blockType == Material.BARREL;
-            case FARMER:
-                return blockType == Material.COMPOSTER;
-            case ARMORER:
-            case TOOLSMITH:
-            case WEAPONSMITH:
-                return blockType == Material.FURNACE || blockType == Material.BLAST_FURNACE;
-            default:
-                return false;
         }
     }
 }

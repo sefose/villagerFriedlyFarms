@@ -234,12 +234,12 @@ public class ConfigManager {
             getLogger().info("Created missing iron_farm configuration");
             anyCreated = true;
         } else {
-            // Update existing iron farm if it's using regular furnace instead of blast furnace
+            // Update existing iron farm if it's using workstation blocks instead of chest
             GeneratorConfig existing = getGeneratorConfig("iron_farm");
-            if (existing.getBlockType() != Material.BLAST_FURNACE) {
+            if (existing.getBlockType() != Material.CHEST) {
                 GeneratorConfig ironFarm = createIronFarmConfig();
                 saveConfiguration(ironFarm);
-                getLogger().info("Updated iron_farm configuration to use blast furnace");
+                getLogger().info("Updated iron_farm configuration to use chest block");
                 anyCreated = true;
             }
         }
@@ -250,6 +250,15 @@ public class ConfigManager {
             saveConfiguration(villagerBreeder);
             getLogger().info("Created missing villager_breeder configuration");
             anyCreated = true;
+        } else {
+            // Update existing villager breeder if it's using workstation blocks instead of chest
+            GeneratorConfig existing = getGeneratorConfig("villager_breeder");
+            if (existing.getBlockType() != Material.CHEST) {
+                GeneratorConfig villagerBreeder = createVillagerBreederConfig();
+                saveConfiguration(villagerBreeder);
+                getLogger().info("Updated villager_breeder configuration to use chest block");
+                anyCreated = true;
+            }
         }
         
         // Check and create/update Wheat Farm
@@ -259,12 +268,12 @@ public class ConfigManager {
             getLogger().info("Created missing wheat_farm configuration");
             anyCreated = true;
         } else {
-            // Update existing wheat farm if it has wrong output amount
+            // Update existing wheat farm if it has wrong output amount or wrong block type
             GeneratorConfig existing = getGeneratorConfig("wheat_farm");
-            if (existing.getOutput().getAmount() != 80) {
+            if (existing.getOutput().getAmount() != 80 || existing.getBlockType() != Material.CHEST) {
                 GeneratorConfig wheatFarm = createWheatFarmConfig();
                 saveConfiguration(wheatFarm);
-                getLogger().info("Updated wheat_farm configuration to 80 items per cycle");
+                getLogger().info("Updated wheat_farm configuration to use chest block and 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -276,12 +285,12 @@ public class ConfigManager {
             getLogger().info("Created missing carrot_farm configuration");
             anyCreated = true;
         } else {
-            // Update existing carrot farm if it has wrong output amount
+            // Update existing carrot farm if it has wrong output amount or wrong block type
             GeneratorConfig existing = getGeneratorConfig("carrot_farm");
-            if (existing.getOutput().getAmount() != 80) {
+            if (existing.getOutput().getAmount() != 80 || existing.getBlockType() != Material.CHEST) {
                 GeneratorConfig carrotFarm = createCarrotFarmConfig();
                 saveConfiguration(carrotFarm);
-                getLogger().info("Updated carrot_farm configuration to 80 items per cycle");
+                getLogger().info("Updated carrot_farm configuration to use chest block and 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -293,12 +302,12 @@ public class ConfigManager {
             getLogger().info("Created missing potato_farm configuration");
             anyCreated = true;
         } else {
-            // Update existing potato farm if it has wrong output amount
+            // Update existing potato farm if it has wrong output amount or wrong block type
             GeneratorConfig existing = getGeneratorConfig("potato_farm");
-            if (existing.getOutput().getAmount() != 80) {
+            if (existing.getOutput().getAmount() != 80 || existing.getBlockType() != Material.CHEST) {
                 GeneratorConfig potatoFarm = createPotatoFarmConfig();
                 saveConfiguration(potatoFarm);
-                getLogger().info("Updated potato_farm configuration to 80 items per cycle");
+                getLogger().info("Updated potato_farm configuration to use chest block and 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -310,12 +319,12 @@ public class ConfigManager {
             getLogger().info("Created missing beetroot_farm configuration");
             anyCreated = true;
         } else {
-            // Update existing beetroot farm if it has wrong output amount
+            // Update existing beetroot farm if it has wrong output amount or wrong block type
             GeneratorConfig existing = getGeneratorConfig("beetroot_farm");
-            if (existing.getOutput().getAmount() != 80) {
+            if (existing.getOutput().getAmount() != 80 || existing.getBlockType() != Material.CHEST) {
                 GeneratorConfig beetrootFarm = createBeetrootFarmConfig();
                 saveConfiguration(beetrootFarm);
-                getLogger().info("Updated beetroot_farm configuration to 80 items per cycle");
+                getLogger().info("Updated beetroot_farm configuration to use chest block and 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -356,7 +365,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "iron_farm",
-            Material.BLAST_FURNACE,
+            Material.CHEST,
             recipe,
             output,
             3, // 3 seconds per iron ingot
@@ -393,7 +402,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "villager_breeder",
-            Material.COMPOSTER,
+            Material.CHEST,
             recipe,
             output,
             480, // 8 minutes (480 seconds) per villager spawn egg
@@ -426,7 +435,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "wheat_farm",
-            Material.BARREL,
+            Material.CHEST,
             recipe,
             output,
             120, // 2 minutes (120 seconds) per harvest
@@ -459,7 +468,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "carrot_farm",
-            Material.BARREL,
+            Material.CHEST,
             recipe,
             output,
             120, // 2 minutes (120 seconds) per harvest
@@ -492,7 +501,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "potato_farm",
-            Material.BARREL,
+            Material.CHEST,
             recipe,
             output,
             120, // 2 minutes (120 seconds) per harvest
@@ -525,7 +534,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "beetroot_farm",
-            Material.BARREL,
+            Material.CHEST,
             recipe,
             output,
             120, // 2 minutes (120 seconds) per harvest
