@@ -9,12 +9,17 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.hanging.HangingBreakEvent;
+import org.bukkit.event.hanging.HangingBreakByEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
@@ -137,8 +142,9 @@ public class BlockEventListener implements Listener {
             }
         }
 
-        // TODO: Add visual indicator for crop farms later
-        // For now, focus on getting the generation working correctly
+        // Add visual indicator for all farms (item frame with output item)
+        logger.info("About to call addFarmVisualIndicator for " + generatorType);
+        addFarmVisualIndicator(block, config, player);
 
         // The generator is already registered with the manager
 
@@ -179,6 +185,9 @@ public class BlockEventListener implements Listener {
         // Handle generator destruction with GeneratorManager
         GeneratorData destroyedGenerator = generatorManager.destroyGenerator(generator.getId());
         if (destroyedGenerator != null) {
+            // Remove visual indicator (item frame) if it exists
+            removeFarmVisualIndicator(block);
+            
             // Drop stored items
             List<org.bukkit.inventory.ItemStack> storedItems = destroyedGenerator.getStoredItems();
             for (org.bukkit.inventory.ItemStack item : storedItems) {
@@ -293,5 +302,269 @@ public class BlockEventListener implements Listener {
             location.getBlockX(),
             location.getBlockY(),
             location.getBlockZ());
+    }
+
+    /**
+     * Adds a visual indicator (item frame with output item) to a farm.
+     * @param farmBlock The farm block
+     * @param config The generator configuration
+     * @param player The player who placed the farm
+     */
+    private void addFarmVisualIndicator(Block farmBlock, GeneratorConfig config, Player player) {
+        logger.info("=== STARTING ITEM FRAME PLACEMENT ===");
+        logger.info("Farm block type: " + farmBlock.getType() + ", Player: " + player.getName());
+        
+        // Add item frames for all farm types (furnace, composter, barrel)
+        if (farmBlock.getType() != Material.BARREL && 
+            farmBlock.getType() != Material.COMPOSTER && 
+            farmBlock.getType() != Material.FURNACE) {
+            logger.info("Skipping - not a supported farm block type");
+            return;
+        }
+
+        // Calculate the face that should face the player
+        BlockFace playerFace = getPlayerFacingDirection(player, farmBlock);
+        
+        // Get the opposite face (where the item frame should be placed)
+        BlockFace frameFace = playerFace.getOppositeFace();
+        
+        logger.info("Player face: " + playerFace + ", Frame will be placed on: " + frameFace);
+        
+        // Try to place item frame on the player-facing side first
+        if (tryPlaceItemFrame(farmBlock, frameFace, config)) {
+            logger.info("Successfully placed item frame on primary face " + frameFace);
+            return;
+        }
+        
+        // If primary face failed, try fallback faces
+        logger.info("Primary face " + frameFace + " failed, trying fallback faces");
+        BlockFace[] fallbackFaces = {BlockFace.SOUTH, BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST};
+        
+        for (BlockFace face : fallbackFaces) {
+            if (face == frameFace) continue; // Skip the face we already tried
+            
+            if (tryPlaceItemFrame(farmBlock, face, config)) {
+                logger.info("Successfully placed item frame on fallback face " + face);
+                return;
+            }
+        }
+        
+        logger.warning("Could not find suitable location for item frame at " + 
+                      formatLocation(farmBlock.getLocation()));
+    }
+
+    /**
+     * Attempts to place an item frame on a specific face of a block.
+     * @param farmBlock The farm block
+     * @param face The face to place the item frame on
+     * @param config The generator configuration
+     * @return True if successfully placed, false otherwise
+     */
+    private boolean tryPlaceItemFrame(Block farmBlock, BlockFace face, GeneratorConfig config) {
+        // Check if the adjacent block is air (can place item frame)
+        Block adjacentBlock = farmBlock.getRelative(face);
+        
+        logger.info("Checking face " + face + ", adjacent block: " + adjacentBlock.getType());
+        
+        if (adjacentBlock.getType() != Material.AIR) {
+            logger.info("Face " + face + " blocked by " + adjacentBlock.getType());
+            return false;
+        }
+        
+        try {
+            logger.info("Attempting to place item frame on face: " + face);
+            
+            // Get the exact location on the face of the block
+            Location frameLocation = getItemFrameLocation(farmBlock, face);
+            
+            logger.info("Calculated frame location: " + frameLocation.getX() + ", " + 
+                       frameLocation.getY() + ", " + frameLocation.getZ());
+            
+            // Validate the location is safe
+            if (frameLocation.getBlock().getType() != Material.AIR) {
+                logger.warning("Frame location is not air: " + frameLocation.getBlock().getType());
+                return false;
+            }
+            
+            // Spawn item frame using the block's location and face
+            ItemFrame itemFrame = (ItemFrame) farmBlock.getWorld().spawnEntity(frameLocation, org.bukkit.entity.EntityType.ITEM_FRAME);
+            
+            if (itemFrame == null) {
+                logger.warning("Failed to spawn item frame - spawnEntity returned null");
+                return false;
+            }
+            
+            logger.info("Item frame spawned successfully, setting properties...");
+            
+            // Set the facing direction BEFORE setting other properties
+            itemFrame.setFacingDirection(face);
+            logger.info("Set facing direction to: " + face);
+            
+            // Set the item in the frame to the output type
+            ItemStack displayItem = new ItemStack(config.getOutput().getType(), 1);
+            itemFrame.setItem(displayItem);
+            logger.info("Set display item to: " + displayItem.getType());
+            
+            // Make the item frame fixed (harder to break accidentally)
+            itemFrame.setFixed(true);
+            logger.info("Set item frame as fixed");
+            
+            // Add persistent data to identify this as a farm item frame
+            PersistentDataContainer pdc = itemFrame.getPersistentDataContainer();
+            pdc.set(new NamespacedKey(plugin, "farm_item_frame"), PersistentDataType.STRING, "true");
+            pdc.set(new NamespacedKey(plugin, "farm_location"), PersistentDataType.STRING, 
+                   formatLocation(farmBlock.getLocation()));
+            logger.info("Added persistent data to item frame");
+            
+            // Verify the item frame is still valid
+            if (itemFrame.isValid()) {
+                logger.info("Item frame placement completed successfully on face " + face);
+                return true;
+            } else {
+                logger.warning("Item frame became invalid after setup");
+                return false;
+            }
+            
+        } catch (Exception e) {
+            logger.warning("Exception while placing item frame on face " + face + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    /**
+     * Calculates the exact location for an item frame on a specific face of a block.
+     * @param block The block to attach the item frame to
+     * @param face The face of the block
+     * @return The location for the item frame
+     */
+    private Location getItemFrameLocation(Block block, BlockFace face) {
+        // Get the location of the adjacent block (where the item frame will be placed)
+        Block adjacentBlock = block.getRelative(face);
+        Location location = adjacentBlock.getLocation().clone();
+        
+        // Position the item frame in the center of the adjacent block face
+        // The item frame will be attached to the farm block from the adjacent block
+        switch (face) {
+            case SOUTH:
+                location.add(0.5, 0.5, 0.0625); // Near the north face of the adjacent block
+                break;
+            case NORTH:
+                location.add(0.5, 0.5, 0.9375); // Near the south face of the adjacent block
+                break;
+            case EAST:
+                location.add(0.0625, 0.5, 0.5); // Near the west face of the adjacent block
+                break;
+            case WEST:
+                location.add(0.9375, 0.5, 0.5); // Near the east face of the adjacent block
+                break;
+            default:
+                // Fallback to center
+                location.add(0.5, 0.5, 0.5);
+        }
+        
+        return location;
+    }
+
+    /**
+     * Gets the direction the player is facing relative to the block.
+     * @param player The player
+     * @param block The block
+     * @return The BlockFace the player is facing
+     */
+    private BlockFace getPlayerFacingDirection(Player player, Block block) {
+        // Use the player's actual facing direction from Bukkit
+        float yaw = player.getLocation().getYaw();
+        
+        // Normalize yaw to 0-360 range
+        while (yaw < 0) yaw += 360;
+        while (yaw >= 360) yaw -= 360;
+        
+        logger.info("Player yaw: " + String.format("%.2f", yaw) + "°");
+        
+        // Convert yaw to BlockFace with more precise boundaries
+        // Yaw 0 = South, 90 = West, 180 = North, 270 = East
+        BlockFace result;
+        if (yaw >= 315 || yaw < 45) {
+            result = BlockFace.SOUTH;
+        } else if (yaw >= 45 && yaw < 135) {
+            result = BlockFace.WEST;
+        } else if (yaw >= 135 && yaw < 225) {
+            result = BlockFace.NORTH;
+        } else { // yaw >= 225 && yaw < 315
+            result = BlockFace.EAST;
+        }
+        
+        logger.info("Calculated player facing direction from yaw: " + result);
+        return result;
+    }
+
+    /**
+     * Removes the visual indicator (item frame) from a farm.
+     * @param farmBlock The farm block
+     */
+    private void removeFarmVisualIndicator(Block farmBlock) {
+        // Find and remove any item frames associated with this farm
+        Location farmLocation = farmBlock.getLocation();
+        
+        // Check nearby entities for item frames
+        farmBlock.getWorld().getNearbyEntities(farmLocation, 2, 2, 2).forEach(entity -> {
+            if (entity instanceof ItemFrame) {
+                ItemFrame itemFrame = (ItemFrame) entity;
+                PersistentDataContainer pdc = itemFrame.getPersistentDataContainer();
+                
+                // Check if this item frame belongs to this farm
+                if (pdc.has(new NamespacedKey(plugin, "farm_item_frame"), PersistentDataType.STRING)) {
+                    String farmLocationStr = pdc.get(new NamespacedKey(plugin, "farm_location"), PersistentDataType.STRING);
+                    if (farmLocationStr != null && farmLocationStr.equals(formatLocation(farmLocation))) {
+                        // This item frame belongs to this farm, remove it
+                        itemFrame.remove();
+                        logger.info("Removed item frame for farm at " + formatLocation(farmLocation));
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Handles item frame breaking to protect farm item frames.
+     */
+    @EventHandler(priority = EventPriority.HIGH)
+    public void onHangingBreak(HangingBreakEvent event) {
+        if (!(event.getEntity() instanceof ItemFrame)) {
+            return;
+        }
+
+        ItemFrame itemFrame = (ItemFrame) event.getEntity();
+        PersistentDataContainer pdc = itemFrame.getPersistentDataContainer();
+        
+        // Check if this is a farm item frame
+        if (pdc.has(new NamespacedKey(plugin, "farm_item_frame"), PersistentDataType.STRING)) {
+            // This is a farm item frame, check if it's being broken by a player
+            if (event instanceof HangingBreakByEntityEvent) {
+                HangingBreakByEntityEvent entityEvent = (HangingBreakByEntityEvent) event;
+                if (entityEvent.getRemover() instanceof Player) {
+                    Player player = (Player) entityEvent.getRemover();
+                    
+                    // Get the farm location from the item frame
+                    String farmLocationStr = pdc.get(new NamespacedKey(plugin, "farm_location"), PersistentDataType.STRING);
+                    if (farmLocationStr != null) {
+                        // Parse the location and check if the player can break the farm
+                        try {
+                            // For now, prevent breaking the item frame directly
+                            // Players should break the farm block instead
+                            event.setCancelled(true);
+                            player.sendMessage("§cYou cannot break the item frame directly. Break the farm block instead.");
+                            return;
+                        } catch (Exception e) {
+                            logger.warning("Error checking farm permissions for item frame: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+            
+            // For non-player causes (like explosions), also protect the frame
+            event.setCancelled(true);
+        }
     }
 }

@@ -4,6 +4,7 @@ com/example/villagerfriendlyfarms/recipe/RecipeManager.class
 com/example/villagerfriendlyfarms/listener/BlockEventListener.class
 com/example/villagerfriendlyfarms/storage/DataStorage.class
 com/example/villagerfriendlyfarms/command/GeneratorCommand.class
+com/example/villagerfriendlyfarms/listener/BlockEventListener$1.class
 com/example/villagerfriendlyfarms/config/JsonUtils$ItemStackDeserializer.class
 com/example/villagerfriendlyfarms/config/JsonUtils$MaterialSerializer.class
 com/example/villagerfriendlyfarms/config/JsonUtils.class

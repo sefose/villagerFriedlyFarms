@@ -252,10 +252,10 @@ public class ConfigManager {
         } else {
             // Update existing wheat farm if it has wrong output amount
             GeneratorConfig existing = getGeneratorConfig("wheat_farm");
-            if (existing.getOutput().getAmount() != 81) {
+            if (existing.getOutput().getAmount() != 80) {
                 GeneratorConfig wheatFarm = createWheatFarmConfig();
                 saveConfiguration(wheatFarm);
-                getLogger().info("Updated wheat_farm configuration to 81 items per cycle");
+                getLogger().info("Updated wheat_farm configuration to 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -269,10 +269,10 @@ public class ConfigManager {
         } else {
             // Update existing carrot farm if it has wrong output amount
             GeneratorConfig existing = getGeneratorConfig("carrot_farm");
-            if (existing.getOutput().getAmount() != 81) {
+            if (existing.getOutput().getAmount() != 80) {
                 GeneratorConfig carrotFarm = createCarrotFarmConfig();
                 saveConfiguration(carrotFarm);
-                getLogger().info("Updated carrot_farm configuration to 81 items per cycle");
+                getLogger().info("Updated carrot_farm configuration to 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -286,10 +286,10 @@ public class ConfigManager {
         } else {
             // Update existing potato farm if it has wrong output amount
             GeneratorConfig existing = getGeneratorConfig("potato_farm");
-            if (existing.getOutput().getAmount() != 81) {
+            if (existing.getOutput().getAmount() != 80) {
                 GeneratorConfig potatoFarm = createPotatoFarmConfig();
                 saveConfiguration(potatoFarm);
-                getLogger().info("Updated potato_farm configuration to 81 items per cycle");
+                getLogger().info("Updated potato_farm configuration to 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -303,10 +303,10 @@ public class ConfigManager {
         } else {
             // Update existing beetroot farm if it has wrong output amount
             GeneratorConfig existing = getGeneratorConfig("beetroot_farm");
-            if (existing.getOutput().getAmount() != 81) {
+            if (existing.getOutput().getAmount() != 80) {
                 GeneratorConfig beetrootFarm = createBeetrootFarmConfig();
                 saveConfiguration(beetrootFarm);
-                getLogger().info("Updated beetroot_farm configuration to 81 items per cycle");
+                getLogger().info("Updated beetroot_farm configuration to 80 items per cycle");
                 anyCreated = true;
             }
         }
@@ -413,7 +413,7 @@ public class ConfigManager {
         recipe[7] = new ItemStack(Material.WHEAT, 1);
         recipe[8] = new ItemStack(Material.WHEAT, 1);
 
-        ItemStack output = new ItemStack(Material.WHEAT, 81); // 81 items per cycle
+        ItemStack output = new ItemStack(Material.WHEAT, 80); // 80 items per cycle
 
         return new GeneratorConfig(
             "wheat_farm",
@@ -446,7 +446,7 @@ public class ConfigManager {
         recipe[7] = new ItemStack(Material.CARROT, 1);
         recipe[8] = new ItemStack(Material.CARROT, 1);
 
-        ItemStack output = new ItemStack(Material.CARROT, 81); // 81 items per cycle
+        ItemStack output = new ItemStack(Material.CARROT, 80); // 80 items per cycle
 
         return new GeneratorConfig(
             "carrot_farm",
@@ -479,7 +479,7 @@ public class ConfigManager {
         recipe[7] = new ItemStack(Material.POTATO, 1);
         recipe[8] = new ItemStack(Material.POTATO, 1);
 
-        ItemStack output = new ItemStack(Material.POTATO, 81); // 81 items per cycle
+        ItemStack output = new ItemStack(Material.POTATO, 80); // 80 items per cycle
 
         return new GeneratorConfig(
             "potato_farm",
@@ -512,7 +512,7 @@ public class ConfigManager {
         recipe[7] = new ItemStack(Material.BEETROOT, 1);
         recipe[8] = new ItemStack(Material.BEETROOT, 1);
 
-        ItemStack output = new ItemStack(Material.BEETROOT, 81); // 81 items per cycle
+        ItemStack output = new ItemStack(Material.BEETROOT, 80); // 80 items per cycle
 
         return new GeneratorConfig(
             "beetroot_farm",

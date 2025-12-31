@@ -83,19 +83,7 @@ public class PlayerInteractionListener implements Listener {
             return; // Don't cancel the event, let Minecraft handle block placement
         }
 
-        // Debug: Check if player is holding a stick and shift-clicking to debug recipes
-        if (player.isSneaking() && player.getInventory().getItemInMainHand().getType() == Material.STICK) {
-            // Debug mode - show all loaded recipes
-            player.sendMessage("§6=== DEBUG: Loaded Generator Recipes ===");
-            Map<String, GeneratorConfig> configs = plugin.getConfigManager().getAllConfigurations();
-            for (GeneratorConfig config : configs.values()) {
-                player.sendMessage("§e" + config.getName() + " §7- Block: " + config.getBlockType() + 
-                                 " - Output: " + config.getOutput().getType() + " x" + config.getOutput().getAmount() +
-                                 " every " + config.getGenerationTimeSeconds() + "s");
-            }
-            player.sendMessage("§6Total recipes loaded: " + configs.size());
-            return;
-        }
+
 
         // Cancel the event to prevent default block interaction (only when not sneaking with blocks)
         event.setCancelled(true);
@@ -158,11 +146,6 @@ public class PlayerInteractionListener implements Listener {
                              formatMaterialName(config.getOutput().getType()) + "(s) " +
                              "§7(" + itemsToGenerate + " cycles × " + itemsPerCycle + " items)" +
                              "§7(elapsed: " + timeMessage + ")" + nextItemMessage);
-            
-            if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                logger.info("Generated " + totalItemsToAdd + " items (" + itemsToGenerate + 
-                           " cycles × " + itemsPerCycle + " items) for player " + player.getName());
-            }
         } else if (elapsedGenerationSeconds > 0) {
             // Show elapsed time even if no full generation cycles completed
             String timeMessage = formatElapsedTime(elapsedGenerationSeconds);
@@ -194,10 +177,6 @@ public class PlayerInteractionListener implements Listener {
 
         // Open generator interface with actual stored items
         openGeneratorInterface(player, config, generatorType, generator, block.getLocation());
-        
-        if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-            logger.info("Player " + player.getName() + " opened generator: " + generatorType);
-        }
     }
 
     /**
@@ -331,11 +310,6 @@ public class PlayerInteractionListener implements Listener {
         generatorManager.updateGenerator(generator);
         Block generatorBlock = generatorLocation.getBlock();
         setStoredItems(generatorBlock, generator.getTotalItemCount());
-        
-        if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-            logger.info("Updated generator at " + formatLocation(generatorLocation) + 
-                       " - remaining items: " + generator.getTotalItemCount());
-        }
     }
 
     /**

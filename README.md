@@ -89,7 +89,7 @@ WHE WHE WHE
 - WHE = Wheat
 - COM = Composter
 
-**Output:** 81 Wheat every 2 minutes  
+**Output:** 80 Wheat every 2 minutes  
 **Appearance:** Barrel with Wheat item frame  
 **Storage:** 1,728 items (27 slots)
 
@@ -105,7 +105,7 @@ CAR CAR CAR
 - CAR = Carrot
 - COM = Composter
 
-**Output:** 81 Carrots every 2 minutes  
+**Output:** 80 Carrots every 2 minutes  
 **Appearance:** Barrel with Carrot item frame  
 **Storage:** 1,728 items (27 slots)
 
@@ -121,7 +121,7 @@ POT POT POT
 - POT = Potato
 - COM = Composter
 
-**Output:** 81 Potatoes every 2 minutes  
+**Output:** 80 Potatoes every 2 minutes  
 **Appearance:** Barrel with Potato item frame  
 **Storage:** 1,728 items (27 slots)
 
@@ -137,7 +137,7 @@ BEE BEE BEE
 - BEE = Beetroot
 - COM = Composter
 
-**Output:** 81 Beetroot every 2 minutes  
+**Output:** 80 Beetroot every 2 minutes  
 **Appearance:** Barrel with Beetroot item frame  
 **Storage:** 1,728 items (27 slots)
 

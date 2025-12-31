@@ -54,18 +54,6 @@ public class CraftingEventListener implements Listener {
         CraftingInventory inventory = event.getInventory();
         ItemStack[] matrix = inventory.getMatrix();
 
-        // Debug logging
-        if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-            logger.info("=== CRAFTING DEBUG ===");
-            logger.info("Crafting grid contents:");
-            for (int i = 0; i < matrix.length; i++) {
-                ItemStack item = matrix[i];
-                String itemDesc = (item == null || item.getType().isAir()) ? "AIR" : 
-                    item.getType().name() + " x" + item.getAmount();
-                logger.info("Slot " + i + ": " + itemDesc);
-            }
-        }
-
         // Check if this is a generator recipe
         GeneratorConfig config = recipeManager.validateCraftingGrid(matrix);
         if (config != null) {
@@ -74,14 +62,6 @@ public class CraftingEventListener implements Listener {
             event.getInventory().setResult(result);
             
             logger.info("Detected generator recipe: " + config.getName());
-            if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                logger.info(recipeManager.debugCraftingGrid(matrix));
-            }
-        } else {
-            if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                logger.info("No matching generator recipe found");
-                logger.info("Available recipes: " + recipeManager.getRegisteredRecipes().keySet());
-            }
         }
     }
 
@@ -131,10 +111,6 @@ public class CraftingEventListener implements Listener {
         updateGeneratorItemMetadata(result, config, player);
 
         player.sendMessage("§aGenerator crafted successfully! Place it to activate.");
-        
-        if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-            logger.info("Player " + player.getName() + " crafted generator: " + config.getName());
-        }
     }
 
     /**
