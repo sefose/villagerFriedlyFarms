@@ -233,6 +233,15 @@ public class ConfigManager {
             saveConfiguration(ironFarm);
             getLogger().info("Created missing iron_farm configuration");
             anyCreated = true;
+        } else {
+            // Update existing iron farm if it's using regular furnace instead of blast furnace
+            GeneratorConfig existing = getGeneratorConfig("iron_farm");
+            if (existing.getBlockType() != Material.BLAST_FURNACE) {
+                GeneratorConfig ironFarm = createIronFarmConfig();
+                saveConfiguration(ironFarm);
+                getLogger().info("Updated iron_farm configuration to use blast furnace");
+                anyCreated = true;
+            }
         }
         
         // Check and create Villager Breeder if missing
@@ -347,7 +356,7 @@ public class ConfigManager {
 
         return new GeneratorConfig(
             "iron_farm",
-            Material.FURNACE,
+            Material.BLAST_FURNACE,
             recipe,
             output,
             3, // 3 seconds per iron ingot
