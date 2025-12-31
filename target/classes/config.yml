@@ -3,7 +3,7 @@
 # Plugin settings
 plugin:
   # Enable debug logging
-  debug: true
+  debug: false
   
   # Auto-save interval in minutes
   auto-save-interval: 5

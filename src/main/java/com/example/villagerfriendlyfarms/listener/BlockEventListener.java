@@ -143,7 +143,6 @@ public class BlockEventListener implements Listener {
         }
 
         // Add visual indicator for all farms (item frame with output item)
-        logger.info("About to call addFarmVisualIndicator for " + generatorType);
         addFarmVisualIndicator(block, config, player);
 
         // The generator is already registered with the manager
@@ -311,14 +310,10 @@ public class BlockEventListener implements Listener {
      * @param player The player who placed the farm
      */
     private void addFarmVisualIndicator(Block farmBlock, GeneratorConfig config, Player player) {
-        logger.info("=== STARTING ITEM FRAME PLACEMENT ===");
-        logger.info("Farm block type: " + farmBlock.getType() + ", Player: " + player.getName());
-        
         // Add item frames for all farm types (furnace, composter, barrel)
         if (farmBlock.getType() != Material.BARREL && 
             farmBlock.getType() != Material.COMPOSTER && 
             farmBlock.getType() != Material.FURNACE) {
-            logger.info("Skipping - not a supported farm block type");
             return;
         }
 
@@ -328,29 +323,21 @@ public class BlockEventListener implements Listener {
         // Get the opposite face (where the item frame should be placed)
         BlockFace frameFace = playerFace.getOppositeFace();
         
-        logger.info("Player face: " + playerFace + ", Frame will be placed on: " + frameFace);
-        
         // Try to place item frame on the player-facing side first
         if (tryPlaceItemFrame(farmBlock, frameFace, config)) {
-            logger.info("Successfully placed item frame on primary face " + frameFace);
             return;
         }
         
         // If primary face failed, try fallback faces
-        logger.info("Primary face " + frameFace + " failed, trying fallback faces");
         BlockFace[] fallbackFaces = {BlockFace.SOUTH, BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST};
         
         for (BlockFace face : fallbackFaces) {
             if (face == frameFace) continue; // Skip the face we already tried
             
             if (tryPlaceItemFrame(farmBlock, face, config)) {
-                logger.info("Successfully placed item frame on fallback face " + face);
                 return;
             }
         }
-        
-        logger.warning("Could not find suitable location for item frame at " + 
-                      formatLocation(farmBlock.getLocation()));
     }
 
     /**
@@ -364,25 +351,16 @@ public class BlockEventListener implements Listener {
         // Check if the adjacent block is air (can place item frame)
         Block adjacentBlock = farmBlock.getRelative(face);
         
-        logger.info("Checking face " + face + ", adjacent block: " + adjacentBlock.getType());
-        
         if (adjacentBlock.getType() != Material.AIR) {
-            logger.info("Face " + face + " blocked by " + adjacentBlock.getType());
             return false;
         }
         
         try {
-            logger.info("Attempting to place item frame on face: " + face);
-            
             // Get the exact location on the face of the block
             Location frameLocation = getItemFrameLocation(farmBlock, face);
             
-            logger.info("Calculated frame location: " + frameLocation.getX() + ", " + 
-                       frameLocation.getY() + ", " + frameLocation.getZ());
-            
             // Validate the location is safe
             if (frameLocation.getBlock().getType() != Material.AIR) {
-                logger.warning("Frame location is not air: " + frameLocation.getBlock().getType());
                 return false;
             }
             
@@ -390,44 +368,29 @@ public class BlockEventListener implements Listener {
             ItemFrame itemFrame = (ItemFrame) farmBlock.getWorld().spawnEntity(frameLocation, org.bukkit.entity.EntityType.ITEM_FRAME);
             
             if (itemFrame == null) {
-                logger.warning("Failed to spawn item frame - spawnEntity returned null");
                 return false;
             }
             
-            logger.info("Item frame spawned successfully, setting properties...");
-            
             // Set the facing direction BEFORE setting other properties
             itemFrame.setFacingDirection(face);
-            logger.info("Set facing direction to: " + face);
             
             // Set the item in the frame to the output type
             ItemStack displayItem = new ItemStack(config.getOutput().getType(), 1);
             itemFrame.setItem(displayItem);
-            logger.info("Set display item to: " + displayItem.getType());
             
             // Make the item frame fixed (harder to break accidentally)
             itemFrame.setFixed(true);
-            logger.info("Set item frame as fixed");
             
             // Add persistent data to identify this as a farm item frame
             PersistentDataContainer pdc = itemFrame.getPersistentDataContainer();
             pdc.set(new NamespacedKey(plugin, "farm_item_frame"), PersistentDataType.STRING, "true");
             pdc.set(new NamespacedKey(plugin, "farm_location"), PersistentDataType.STRING, 
                    formatLocation(farmBlock.getLocation()));
-            logger.info("Added persistent data to item frame");
             
             // Verify the item frame is still valid
-            if (itemFrame.isValid()) {
-                logger.info("Item frame placement completed successfully on face " + face);
-                return true;
-            } else {
-                logger.warning("Item frame became invalid after setup");
-                return false;
-            }
+            return itemFrame.isValid();
             
         } catch (Exception e) {
-            logger.warning("Exception while placing item frame on face " + face + ": " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
@@ -480,8 +443,6 @@ public class BlockEventListener implements Listener {
         while (yaw < 0) yaw += 360;
         while (yaw >= 360) yaw -= 360;
         
-        logger.info("Player yaw: " + String.format("%.2f", yaw) + "°");
-        
         // Convert yaw to BlockFace with more precise boundaries
         // Yaw 0 = South, 90 = West, 180 = North, 270 = East
         BlockFace result;
@@ -495,7 +456,6 @@ public class BlockEventListener implements Listener {
             result = BlockFace.EAST;
         }
         
-        logger.info("Calculated player facing direction from yaw: " + result);
         return result;
     }
 
@@ -519,7 +479,6 @@ public class BlockEventListener implements Listener {
                     if (farmLocationStr != null && farmLocationStr.equals(formatLocation(farmLocation))) {
                         // This item frame belongs to this farm, remove it
                         itemFrame.remove();
-                        logger.info("Removed item frame for farm at " + formatLocation(farmLocation));
                     }
                 }
             }
@@ -557,7 +516,7 @@ public class BlockEventListener implements Listener {
                             player.sendMessage("§cYou cannot break the item frame directly. Break the farm block instead.");
                             return;
                         } catch (Exception e) {
-                            logger.warning("Error checking farm permissions for item frame: " + e.getMessage());
+                            // Silently handle errors
                         }
                     }
                 }
