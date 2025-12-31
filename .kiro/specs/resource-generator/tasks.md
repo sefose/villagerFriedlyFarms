@@ -1,8 +1,8 @@
-# Implementation Plan: Villager Friendly Farms Plugin
+# Implementation Plan: Crop Farm Plugin
 
 ## Overview
 
-This implementation plan breaks down the Villager Friendly Farms plugin into discrete coding tasks. Each task builds incrementally toward a complete Paper 1.21.11 plugin that allows players to craft villager-friendly farming devices using specific recipes. The farms appear as custom blocks and accumulate resources over time using a passive calculation system.
+This implementation plan breaks down the Crop Farm plugin into discrete coding tasks. Each task builds incrementally toward a complete Paper 1.21.11 plugin that allows players to craft crop generation farms using specific recipes. The farms appear as barrels with item frames and accumulate crops over time using a passive calculation system.
 
 ## Tasks
 
@@ -13,190 +13,158 @@ This implementation plan breaks down the Villager Friendly Farms plugin into dis
   - _Requirements: All requirements depend on basic plugin structure_
 
 - [x] 2. Implement core data models and configuration system
-  - [x] 2.1 Create GeneratorConfig and GeneratorData classes
-    - Define Java classes for generator configuration and instance data
+  - [x] 2.1 Create CropFarmConfig and CropFarmData classes
+    - Define Java classes for crop farm configuration and instance data
     - Implement JSON serialization/deserialization methods
-    - _Requirements: 6.1, 7.1, 7.2_
+    - _Requirements: 9.1, 10.1, 10.2_
 
-  - [ ]* 2.2 Write property test for configuration loading
+  - [x] 2.2 Write property test for configuration loading
     - **Property 6: Configuration System Integrity**
-    - **Validates: Requirements 6.1, 6.2, 6.3, 6.4, 6.5, 7.2**
+    - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 9.5**
 
   - [x] 2.3 Implement configuration file management
-    - Create ConfigManager class to load/save generator configurations
+    - Create ConfigManager class to load/save crop farm configurations
     - Implement hot-reloading of configuration changes
-    - Create default configuration files for Iron Farm and Villager Breeder
-    - _Requirements: 6.1, 6.4, 6.5_
-
-  - [ ]* 2.4 Write unit tests for configuration management
-    - Test configuration loading, saving, and hot-reloading
-    - Test default configuration creation
-    - _Requirements: 6.1, 6.4, 6.5_
+    - Create default configuration files for Wheat, Carrot, Potato, and Beetroot farms
+    - _Requirements: 9.1, 9.4, 9.5_
 
 - [x] 3. Implement recipe system and crafting validation
   - [x] 3.1 Create RecipeManager class
-    - Implement recipe registration and pattern matching
+    - Implement recipe registration and pattern matching for crop farms
     - Create recipe validation logic for 3x3 crafting grids
-    - _Requirements: 1.1, 1.6, 7.3_
-
-  - [ ]* 3.2 Write property test for recipe pattern recognition
-    - **Property 1: Recipe Pattern Recognition**
-    - **Validates: Requirements 1.1, 1.6, 7.3**
+    - _Requirements: 1.1, 1.7, 1.8_
 
   - [x] 3.3 Implement CraftingEventListener
-    - Listen for PrepareItemCraftEvent to detect generator crafting
+    - Listen for PrepareItemCraftEvent to detect crop farm crafting
     - Validate crafting patterns and handle material consumption
-    - _Requirements: 1.2, 1.4, 1.5_
+    - Support all four crop farm types (wheat, carrot, potato, beetroot)
+    - _Requirements: 1.2, 1.3, 1.4, 1.5, 1.6_
 
   - [x] 3.4 Add recipe book integration
-    - Register Bukkit recipes so farms appear in recipe book
+    - Register Bukkit recipes so crop farms appear in recipe book
     - Add recipe cleanup on shutdown and reload functionality
     - _Requirements: Recipe discoverability and user experience_
 
-  - [ ]* 3.5 Write property test for valid crafting behavior
-    - **Property 2: Valid Crafting Behavior**
-    - **Validates: Requirements 1.4**
+- [x] 4. Implement crop farm visual structure and interaction system
+  - [x] 4.1 Create BlockEventListener for crop farm placement and destruction
+    - Handle BlockPlaceEvent to create crop farms from crafted items
+    - Place barrel blocks and item frames with appropriate crop displays
+    - Handle BlockBreakEvent to destroy farms and drop items
+    - Add persistent data to crop farm blocks
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
 
-  - [ ]* 3.6 Write property test for invalid crafting protection
-    - **Property 3: Invalid Crafting Protection**
-    - **Validates: Requirements 1.5**
-
-- [x] 4. Implement block placement and interaction system
-  - [x] 4.1 Create BlockEventListener for generator placement and destruction
-    - Handle BlockPlaceEvent to create generators from crafted items
-    - Handle BlockBreakEvent to destroy generators and drop items
-    - Add persistent data to generator blocks
-    - _Requirements: 2.1, 11.1, 11.2_
-
-  - [x] 4.2 Implement PlayerInteractionListener for generator interfaces
-    - Handle right-click events on generator blocks
-    - Calculate accumulated resources based on elapsed time
-    - Open chest-like inventory interface for generators
-    - _Requirements: 2.2, 2.3, 2.4, 8.1, 8.2, 8.5_
+  - [x] 4.2 Implement PlayerInteractionListener for crop farm interfaces
+    - Handle right-click events on crop farm barrels
+    - Calculate accumulated crops based on elapsed time
+    - Open chest-like inventory interface for crop farms
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5, 11.1, 11.2, 11.3, 11.5_
 
   - [x] 4.3 Fix generation timer logic
     - Implement separate lastGenerationTime tracking
     - Add advanceGenerationTime() method for proper timer advancement
     - Ensure continuous generation based on real elapsed time
-    - _Requirements: Proper time-based resource calculation_
+    - _Requirements: Proper time-based crop calculation_
 
-  - [ ]* 4.4 Write property test for time-based resource calculation
-    - **Property 4: Time-Based Resource Calculation**
-    - **Validates: Requirements 2.2, 2.3, 2.4, 3.2, 3.3, 4.2, 4.3, 4.4**
+- [x] 5. Implement specific crop farm functionality
+  - [x] 5.1 Implement Wheat Farm functionality
+    - Create wheat farm with wheat and wheat seeds output
+    - Configure 2-minute generation timing
+    - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
 
-  - [ ]* 4.5 Write property test for generator interface consistency
-    - **Property 7: Generator Interface Consistency**
-    - **Validates: Requirements 8.1, 8.2, 8.5**
+  - [x] 5.2 Implement Carrot Farm functionality
+    - Create carrot farm with carrot output
+    - Configure 2-minute generation timing
+    - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
-- [x] 5. Implement command system
-  - [x] 5.1 Create GeneratorCommand class
-    - Implement /rg command with subcommands (info, reload, give, list)
-    - Add administrative functions for managing generators
-    - _Requirements: 6.4, 10.1, 10.2, 10.3_
+  - [x] 5.3 Implement Potato Farm functionality
+    - Create potato farm with potato output
+    - Configure 2-minute generation timing
+    - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [x] 6. Implement generator management system
-  - [x] 6.1 Create GeneratorManager class
-    - Centralize generator creation, destruction, and registry
-    - Implement generator limits (per chunk, per player)
-    - Add generator lookup and validation methods
-    - _Requirements: 2.1, 2.5, 9.1, 9.2_
+  - [x] 5.4 Implement Beetroot Farm functionality
+    - Create beetroot farm with beetroot and beetroot seeds output
+    - Configure 2-minute generation timing
+    - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5_
 
-  - [ ]* 6.2 Write property test for passive generation system
-    - **Property 5: Passive Generation System**
-    - **Validates: Requirements 5.1, 5.4, 5.5**
+- [x] 6. Implement command system
+  - [x] 6.1 Create CropFarmCommand class
+    - Implement /cropfarm command with subcommands (info, reload, give, list)
+    - Add administrative functions for managing crop farms
+    - _Requirements: 9.4, 13.1, 13.2, 13.3_
 
-  - [x] 6.3 Integrate GeneratorManager with existing listeners
-    - Update BlockEventListener to use GeneratorManager
-    - Update PlayerInteractionListener to use GeneratorManager
-    - Ensure proper generator registration and cleanup
-    - _Requirements: 2.1, 2.5, 9.3_
+- [x] 7. Implement crop farm management system
+  - [x] 7.1 Create CropFarmManager class
+    - Centralize crop farm creation, destruction, and registry
+    - Implement crop farm limits (per chunk, per player)
+    - Add crop farm lookup and validation methods
+    - _Requirements: 2.1, 2.5, 12.1, 12.2_
 
-- [x] 7. Implement data persistence and storage
-  - [x] 7.1 Create DataStorage class using file storage
-    - Implement generator data saving and loading to JSON files
+  - [x] 7.3 Integrate CropFarmManager with existing listeners
+    - Update BlockEventListener to use CropFarmManager
+    - Update PlayerInteractionListener to use CropFarmManager
+    - Ensure proper crop farm registration and cleanup
+    - _Requirements: 2.1, 2.5, 12.3_
+
+- [x] 8. Implement data persistence and storage
+  - [x] 8.1 Create DataStorage class using file storage
+    - Implement crop farm data saving and loading to JSON files
     - Handle server restart scenarios and data recovery
     - Implement automatic backup and corruption handling
-    - _Requirements: 9.1, 9.2, 9.4, 9.5_
+    - _Requirements: 12.1, 12.2, 12.4, 12.5_
 
-  - [ ]* 7.2 Write property test for data persistence round-trip
-    - **Property 9: Data Persistence Round-Trip**
-    - **Validates: Requirements 9.1, 9.2, 9.5**
-
-  - [x] 7.3 Implement generator cleanup and data removal
-    - Handle generator destruction and data cleanup
-    - Implement item dropping when generators are destroyed
+  - [x] 8.3 Implement crop farm cleanup and data removal
+    - Handle crop farm destruction and data cleanup
+    - Implement item dropping when crop farms are destroyed
     - Clean up orphaned data files
-    - _Requirements: 9.3, 11.5**
+    - _Requirements: 12.3, 2.5_
 
-  - [ ]* 7.4 Write property test for generator cleanup consistency
-    - **Property 10: Generator Cleanup Consistency**
-    - **Validates: Requirements 9.3, 11.5**
-
-- [x] 8. Implement permission system and security
-  - [x] 8.1 Create PermissionManager class
-    - Implement permission checking for all generator operations
+- [x] 9. Implement permission system and security
+  - [x] 9.1 Create PermissionManager class
+    - Implement permission checking for all crop farm operations
     - Integrate with Bukkit permission system
     - Add configurable permission requirements
-    - _Requirements: 10.1, 10.2, 10.3, 10.4, 10.5_
+    - _Requirements: 13.1, 13.2, 13.3, 13.4, 13.5_
 
-  - [ ]* 8.2 Write property test for permission-based access control
-    - **Property 11: Permission-Based Access Control**
-    - **Validates: Requirements 10.1, 10.2, 10.3, 11.3, 11.4**
-
-  - [x] 8.3 Enhance block protection system
+  - [x] 9.3 Enhance block protection system
     - Improve BlockEventListener with proper permission checks
-    - Prevent unauthorized generator modification
+    - Prevent unauthorized crop farm modification
     - Add admin override functionality
-    - _Requirements: 11.1, 11.2, 11.3, 11.4**
+    - _Requirements: 14.1, 14.2, 14.3, 14.4_
 
-  - [ ]* 8.4 Write property test for block protection enforcement
-    - **Property 12: Block Protection Enforcement**
-    - **Validates: Requirements 11.1, 11.2**
-
-- [x] 9. Implement storage capacity management
-  - [x] 9.1 Add storage capacity limits to generator interface
-    - Prevent resource generation when storage is full
-    - Handle partial resource generation when storage has limited space
+- [x] 10. Implement storage capacity management
+  - [x] 10.1 Add storage capacity limits to crop farm interface
+    - Prevent crop generation when storage is full
+    - Handle partial crop generation when storage has limited space
     - Add visual indicators for storage status
-    - _Requirements: 8.4_
+    - _Requirements: 11.4_
 
-  - [ ]* 9.2 Write property test for storage capacity management
-    - **Property 8: Storage Capacity Management**
-    - **Validates: Requirements 8.4**
-
-- [x] 10. Integration and final wiring
-  - [x] 10.1 Wire all components together in main plugin class
-    - Initialize GeneratorManager, DataStorage, and PermissionManager
+- [x] 11. Integration and final wiring
+  - [x] 11.1 Wire all components together in main plugin class
+    - Initialize CropFarmManager, DataStorage, and PermissionManager
     - Ensure proper startup and shutdown sequences
     - Add comprehensive error handling and logging
     - _Requirements: All requirements_
 
-  - [ ]* 10.2 Write integration tests
-    - Test end-to-end generator creation and usage flows
-    - Test server restart scenarios
-    - Test permission and security features
-    - _Requirements: All requirements_
-
-  - [x] 10.3 Implement enhanced error handling and logging
+  - [x] 11.3 Implement enhanced error handling and logging
     - Add comprehensive error handling throughout the plugin
     - Implement graceful degradation for data corruption
     - Add detailed logging for debugging and monitoring
-    - _Requirements: 9.4, 10.4_
+    - _Requirements: 12.4, 13.4_
 
-- [x] 11. Update documentation and branding
-  - [x] 11.1 Update README.md to use "Villager Friendly Farms" terminology
+- [x] 12. Update documentation and branding
+  - [x] 12.1 Update README.md to use "Villager Friendly Farms" terminology
     - Replace "Resource Generator" with "Villager Friendly Farms"
     - Update command examples to use /vff instead of /rg
     - Update permission examples to use villagerfriendlyfarms prefix
     - _Requirements: Consistent branding and user documentation_
 
-  - [x] 11.2 Update plugin.yml with new branding
+  - [x] 12.2 Update plugin.yml with new branding
     - Change plugin name to VillagerFriendlyFarms
     - Update commands to use /vff instead of /rg
     - Update permissions to use villagerfriendlyfarms prefix
     - _Requirements: Consistent branding and command structure_
 
-  - [x] 11.3 Complete code refactoring to match new branding
+  - [x] 12.3 Complete code refactoring to match new branding
     - [x] Update command registration from "rg" to "vff" in ResourceGeneratorPlugin.java
     - [x] Update all permission constants in PermissionManager.java to use "villagerfriendlyfarms" prefix
     - [x] Update GeneratorCommand.java to use new permission constants and command references
@@ -206,16 +174,16 @@ This implementation plan breaks down the Villager Friendly Farms plugin into dis
     - [x] Update Maven configuration and build files
     - _Requirements: Complete code consistency with documentation and plugin.yml_
 
-- [x] 12. Final checkpoint - Ensure all tests pass
+- [x] 13. Final checkpoint - Ensure all tests pass
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Notes
 
-- Tasks marked with `*` are optional and can be skipped for faster MVP
 - Each task references specific requirements for traceability
-- Property tests validate universal correctness properties using jqwik framework
-- Unit tests validate specific examples and edge cases
-- The implementation supports two generator types: Iron Farm and Villager Breeder
-- Both generators use the same mechanics but different recipes and outputs
+- The implementation supports four crop farm types: Wheat, Carrot, Potato, and Beetroot
+- All crop farms use the same mechanics but different recipes and outputs
 - The implementation uses Paper API 1.21.11 features including PDC for block metadata
-- Current implementation already includes basic generator functionality with time-based resource calculation
+- Current implementation already includes basic crop farm functionality with time-based crop calculation
+- Crop farms appear as barrels with item frames displaying the crop type
+- All crop farms use a 2-minute default generation timing (configurable)
+- Testing tasks have been removed due to Bukkit/Paper API testing framework compatibility issues

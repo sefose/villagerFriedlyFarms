@@ -27,10 +27,26 @@ public class ConfigManager {
 
     public ConfigManager(VillagerFriendlyFarmsPlugin plugin) {
         this.plugin = plugin;
-        this.logger = plugin.getLogger();
+        this.logger = plugin != null ? plugin.getLogger() : Logger.getLogger("ConfigManager");
         this.mapper = JsonUtils.getMapper();
-        this.configDir = new File(plugin.getDataFolder(), "generators");
+        this.configDir = new File(getDataFolder(), "generators");
         this.generatorConfigs = new HashMap<>();
+    }
+
+    /**
+     * Gets the plugin data folder. Can be overridden for testing.
+     * @return The data folder
+     */
+    protected File getDataFolder() {
+        return plugin.getDataFolder();
+    }
+
+    /**
+     * Gets the logger. Can be overridden for testing.
+     * @return The logger
+     */
+    protected Logger getLogger() {
+        return logger;
     }
 
     /**
@@ -40,29 +56,26 @@ public class ConfigManager {
     public void initialize() {
         try {
             // Create plugin data directory if it doesn't exist
-            if (!plugin.getDataFolder().exists()) {
-                plugin.getDataFolder().mkdirs();
+            if (!getDataFolder().exists()) {
+                getDataFolder().mkdirs();
             }
 
             // Create generators config directory
             if (!configDir.exists()) {
                 configDir.mkdirs();
-                logger.info("Created generators configuration directory");
+                getLogger().info("Created generators configuration directory");
             }
 
             // Load existing configurations
             loadAllConfigurations();
 
-            // Create default configurations if none exist
-            if (generatorConfigs.isEmpty()) {
-                createDefaultConfigurations();
-                logger.info("Created default generator configurations");
-            }
+            // Always ensure we have all default configurations
+            createMissingDefaultConfigurations();
 
-            logger.info("Loaded " + generatorConfigs.size() + " generator configurations");
+            getLogger().info("Loaded " + generatorConfigs.size() + " generator configurations");
 
         } catch (Exception e) {
-            logger.log(Level.SEVERE, "Failed to initialize configuration system", e);
+            getLogger().log(Level.SEVERE, "Failed to initialize configuration system", e);
         }
     }
 
@@ -85,9 +98,9 @@ public class ConfigManager {
             try {
                 GeneratorConfig config = mapper.readValue(configFile, GeneratorConfig.class);
                 generatorConfigs.put(config.getName(), config);
-                logger.info("Loaded generator config: " + config.getName());
+                getLogger().info("Loaded generator config: " + config.getName());
             } catch (Exception e) {
-                logger.log(Level.WARNING, "Failed to load config file: " + configFile.getName(), e);
+                getLogger().log(Level.WARNING, "Failed to load config file: " + configFile.getName(), e);
             }
         }
     }
@@ -101,9 +114,9 @@ public class ConfigManager {
             File configFile = new File(configDir, config.getName() + ".json");
             mapper.writerWithDefaultPrettyPrinter().writeValue(configFile, config);
             generatorConfigs.put(config.getName(), config);
-            logger.info("Saved generator config: " + config.getName());
+            getLogger().info("Saved generator config: " + config.getName());
         } catch (IOException e) {
-            logger.log(Level.SEVERE, "Failed to save config: " + config.getName(), e);
+            getLogger().log(Level.SEVERE, "Failed to save config: " + config.getName(), e);
         }
     }
 
@@ -138,9 +151,9 @@ public class ConfigManager {
      * This allows for hot-reloading without server restart.
      */
     public void reloadConfigurations() {
-        logger.info("Reloading generator configurations...");
+        getLogger().info("Reloading generator configurations...");
         loadAllConfigurations();
-        logger.info("Reloaded " + generatorConfigs.size() + " generator configurations");
+        getLogger().info("Reloaded " + generatorConfigs.size() + " generator configurations");
     }
 
     /**
@@ -154,7 +167,7 @@ public class ConfigManager {
             String recipeHash = calculateRecipeHash(config.getRecipe());
             
             if (recipeHashes.containsKey(recipeHash)) {
-                logger.severe("Recipe conflict detected between generators: " + 
+                getLogger().severe("Recipe conflict detected between generators: " + 
                              config.getName() + " and " + recipeHashes.get(recipeHash));
                 return false;
             }
@@ -190,6 +203,119 @@ public class ConfigManager {
         // Create Villager Breeder configuration
         GeneratorConfig villagerBreeder = createVillagerBreederConfig();
         saveConfiguration(villagerBreeder);
+        
+        // Create Wheat Farm configuration
+        GeneratorConfig wheatFarm = createWheatFarmConfig();
+        saveConfiguration(wheatFarm);
+        
+        // Create Carrot Farm configuration
+        GeneratorConfig carrotFarm = createCarrotFarmConfig();
+        saveConfiguration(carrotFarm);
+        
+        // Create Potato Farm configuration
+        GeneratorConfig potatoFarm = createPotatoFarmConfig();
+        saveConfiguration(potatoFarm);
+        
+        // Create Beetroot Farm configuration
+        GeneratorConfig beetrootFarm = createBeetrootFarmConfig();
+        saveConfiguration(beetrootFarm);
+    }
+
+    /**
+     * Creates any missing default generator configurations.
+     */
+    private void createMissingDefaultConfigurations() {
+        boolean anyCreated = false;
+        
+        // Check and create Iron Farm if missing
+        if (!hasConfiguration("iron_farm")) {
+            GeneratorConfig ironFarm = createIronFarmConfig();
+            saveConfiguration(ironFarm);
+            getLogger().info("Created missing iron_farm configuration");
+            anyCreated = true;
+        }
+        
+        // Check and create Villager Breeder if missing
+        if (!hasConfiguration("villager_breeder")) {
+            GeneratorConfig villagerBreeder = createVillagerBreederConfig();
+            saveConfiguration(villagerBreeder);
+            getLogger().info("Created missing villager_breeder configuration");
+            anyCreated = true;
+        }
+        
+        // Check and create/update Wheat Farm
+        if (!hasConfiguration("wheat_farm")) {
+            GeneratorConfig wheatFarm = createWheatFarmConfig();
+            saveConfiguration(wheatFarm);
+            getLogger().info("Created missing wheat_farm configuration");
+            anyCreated = true;
+        } else {
+            // Update existing wheat farm if it has wrong output amount
+            GeneratorConfig existing = getGeneratorConfig("wheat_farm");
+            if (existing.getOutput().getAmount() != 81) {
+                GeneratorConfig wheatFarm = createWheatFarmConfig();
+                saveConfiguration(wheatFarm);
+                getLogger().info("Updated wheat_farm configuration to 81 items per cycle");
+                anyCreated = true;
+            }
+        }
+        
+        // Check and create/update Carrot Farm
+        if (!hasConfiguration("carrot_farm")) {
+            GeneratorConfig carrotFarm = createCarrotFarmConfig();
+            saveConfiguration(carrotFarm);
+            getLogger().info("Created missing carrot_farm configuration");
+            anyCreated = true;
+        } else {
+            // Update existing carrot farm if it has wrong output amount
+            GeneratorConfig existing = getGeneratorConfig("carrot_farm");
+            if (existing.getOutput().getAmount() != 81) {
+                GeneratorConfig carrotFarm = createCarrotFarmConfig();
+                saveConfiguration(carrotFarm);
+                getLogger().info("Updated carrot_farm configuration to 81 items per cycle");
+                anyCreated = true;
+            }
+        }
+        
+        // Check and create/update Potato Farm
+        if (!hasConfiguration("potato_farm")) {
+            GeneratorConfig potatoFarm = createPotatoFarmConfig();
+            saveConfiguration(potatoFarm);
+            getLogger().info("Created missing potato_farm configuration");
+            anyCreated = true;
+        } else {
+            // Update existing potato farm if it has wrong output amount
+            GeneratorConfig existing = getGeneratorConfig("potato_farm");
+            if (existing.getOutput().getAmount() != 81) {
+                GeneratorConfig potatoFarm = createPotatoFarmConfig();
+                saveConfiguration(potatoFarm);
+                getLogger().info("Updated potato_farm configuration to 81 items per cycle");
+                anyCreated = true;
+            }
+        }
+        
+        // Check and create/update Beetroot Farm
+        if (!hasConfiguration("beetroot_farm")) {
+            GeneratorConfig beetrootFarm = createBeetrootFarmConfig();
+            saveConfiguration(beetrootFarm);
+            getLogger().info("Created missing beetroot_farm configuration");
+            anyCreated = true;
+        } else {
+            // Update existing beetroot farm if it has wrong output amount
+            GeneratorConfig existing = getGeneratorConfig("beetroot_farm");
+            if (existing.getOutput().getAmount() != 81) {
+                GeneratorConfig beetrootFarm = createBeetrootFarmConfig();
+                saveConfiguration(beetrootFarm);
+                getLogger().info("Updated beetroot_farm configuration to 81 items per cycle");
+                anyCreated = true;
+            }
+        }
+        
+        if (anyCreated) {
+            getLogger().info("Created/updated default generator configurations");
+            // Reload configurations to include the new ones
+            loadAllConfigurations();
+        }
     }
 
     /**
@@ -263,6 +389,138 @@ public class ConfigManager {
             output,
             480, // 8 minutes (480 seconds) per villager spawn egg
             432   // 27 slots × 16 spawn eggs per slot = 432 spawn eggs max
+        );
+    }
+
+    /**
+     * Creates the default Wheat Farm configuration.
+     * Recipe:
+     * WHE WHE WHE
+     * WHE COM WHE
+     * WHE WHE WHE
+     */
+    private GeneratorConfig createWheatFarmConfig() {
+        ItemStack[] recipe = new ItemStack[9];
+        
+        // All positions: wheat except center (composter)
+        recipe[0] = new ItemStack(Material.WHEAT, 1);
+        recipe[1] = new ItemStack(Material.WHEAT, 1);
+        recipe[2] = new ItemStack(Material.WHEAT, 1);
+        recipe[3] = new ItemStack(Material.WHEAT, 1);
+        recipe[4] = new ItemStack(Material.COMPOSTER, 1); // Center: composter
+        recipe[5] = new ItemStack(Material.WHEAT, 1);
+        recipe[6] = new ItemStack(Material.WHEAT, 1);
+        recipe[7] = new ItemStack(Material.WHEAT, 1);
+        recipe[8] = new ItemStack(Material.WHEAT, 1);
+
+        ItemStack output = new ItemStack(Material.WHEAT, 81); // 81 items per cycle
+
+        return new GeneratorConfig(
+            "wheat_farm",
+            Material.BARREL,
+            recipe,
+            output,
+            120, // 2 minutes (120 seconds) per harvest
+            1728   // 27 slots × 64 items per slot = 1,728 items max
+        );
+    }
+
+    /**
+     * Creates the default Carrot Farm configuration.
+     * Recipe:
+     * CAR CAR CAR
+     * CAR COM CAR
+     * CAR CAR CAR
+     */
+    private GeneratorConfig createCarrotFarmConfig() {
+        ItemStack[] recipe = new ItemStack[9];
+        
+        // All positions: carrot except center (composter)
+        recipe[0] = new ItemStack(Material.CARROT, 1);
+        recipe[1] = new ItemStack(Material.CARROT, 1);
+        recipe[2] = new ItemStack(Material.CARROT, 1);
+        recipe[3] = new ItemStack(Material.CARROT, 1);
+        recipe[4] = new ItemStack(Material.COMPOSTER, 1); // Center: composter
+        recipe[5] = new ItemStack(Material.CARROT, 1);
+        recipe[6] = new ItemStack(Material.CARROT, 1);
+        recipe[7] = new ItemStack(Material.CARROT, 1);
+        recipe[8] = new ItemStack(Material.CARROT, 1);
+
+        ItemStack output = new ItemStack(Material.CARROT, 81); // 81 items per cycle
+
+        return new GeneratorConfig(
+            "carrot_farm",
+            Material.BARREL,
+            recipe,
+            output,
+            120, // 2 minutes (120 seconds) per harvest
+            1728   // 27 slots × 64 items per slot = 1,728 items max
+        );
+    }
+
+    /**
+     * Creates the default Potato Farm configuration.
+     * Recipe:
+     * POT POT POT
+     * POT COM POT
+     * POT POT POT
+     */
+    private GeneratorConfig createPotatoFarmConfig() {
+        ItemStack[] recipe = new ItemStack[9];
+        
+        // All positions: potato except center (composter)
+        recipe[0] = new ItemStack(Material.POTATO, 1);
+        recipe[1] = new ItemStack(Material.POTATO, 1);
+        recipe[2] = new ItemStack(Material.POTATO, 1);
+        recipe[3] = new ItemStack(Material.POTATO, 1);
+        recipe[4] = new ItemStack(Material.COMPOSTER, 1); // Center: composter
+        recipe[5] = new ItemStack(Material.POTATO, 1);
+        recipe[6] = new ItemStack(Material.POTATO, 1);
+        recipe[7] = new ItemStack(Material.POTATO, 1);
+        recipe[8] = new ItemStack(Material.POTATO, 1);
+
+        ItemStack output = new ItemStack(Material.POTATO, 81); // 81 items per cycle
+
+        return new GeneratorConfig(
+            "potato_farm",
+            Material.BARREL,
+            recipe,
+            output,
+            120, // 2 minutes (120 seconds) per harvest
+            1728   // 27 slots × 64 items per slot = 1,728 items max
+        );
+    }
+
+    /**
+     * Creates the default Beetroot Farm configuration.
+     * Recipe:
+     * BEE BEE BEE
+     * BEE COM BEE
+     * BEE BEE BEE
+     */
+    private GeneratorConfig createBeetrootFarmConfig() {
+        ItemStack[] recipe = new ItemStack[9];
+        
+        // All positions: beetroot except center (composter)
+        recipe[0] = new ItemStack(Material.BEETROOT, 1);
+        recipe[1] = new ItemStack(Material.BEETROOT, 1);
+        recipe[2] = new ItemStack(Material.BEETROOT, 1);
+        recipe[3] = new ItemStack(Material.BEETROOT, 1);
+        recipe[4] = new ItemStack(Material.COMPOSTER, 1); // Center: composter
+        recipe[5] = new ItemStack(Material.BEETROOT, 1);
+        recipe[6] = new ItemStack(Material.BEETROOT, 1);
+        recipe[7] = new ItemStack(Material.BEETROOT, 1);
+        recipe[8] = new ItemStack(Material.BEETROOT, 1);
+
+        ItemStack output = new ItemStack(Material.BEETROOT, 81); // 81 items per cycle
+
+        return new GeneratorConfig(
+            "beetroot_farm",
+            Material.BARREL,
+            recipe,
+            output,
+            120, // 2 minutes (120 seconds) per harvest
+            1728   // 27 slots × 64 items per slot = 1,728 items max
         );
     }
 

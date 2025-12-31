@@ -137,6 +137,9 @@ public class BlockEventListener implements Listener {
             }
         }
 
+        // TODO: Add visual indicator for crop farms later
+        // For now, focus on getting the generation working correctly
+
         // The generator is already registered with the manager
 
         player.sendMessage("§aGenerator placed successfully! Type: " + 

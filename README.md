@@ -1,14 +1,14 @@
 # Villager Friendly Farms Plugin
 
-A Minecraft Paper 1.21.11 plugin that allows players to craft villager-friendly farming devices using specific recipes. These farms appear as custom blocks and accumulate resources over time using a passive calculation system.
+A Minecraft Paper 1.21.11 plugin that allows players to craft resource generators and crop farming devices using specific recipes. These farms appear as various blocks with item frames and accumulate resources over time using a passive calculation system.
 
 ## Features
 
-- **Two Farm Types**: Iron Farm and Villager Breeder with unique recipes and outputs
+- **Six Farm Types**: Iron Farm, Villager Breeder, and four crop farms (Wheat, Carrot, Potato, Beetroot) with unique recipes and outputs
 - **Recipe Book Integration**: Recipes appear in the Minecraft crafting book for easy discovery
 - **Passive Resource Generation**: Farms accumulate resources over time without background processing
 - **Continuous Generation Timer**: Items generate based on real elapsed time, not access frequency
-- **Custom Block Appearance**: Farms appear as themed blocks (lit furnace for both types)
+- **Custom Block Appearance**: Farms appear as different blocks (furnaces, composters, barrels) with item frames displaying the resource type
 - **Chest-like Interface**: Right-click farms to access accumulated resources with visual storage indicators
 - **Storage Capacity Management**: Full storage limits with overflow protection and visual warnings
 - **Configurable Generation Rates**: Each farm type has its own configurable generation speed
@@ -41,20 +41,20 @@ The compiled plugin JAR will be in the `target/` directory.
 **Recipe Pattern:**
 ```
 BED BED BED
-COM HOP COM  
+COM HOP COM
 LAV CHE WAT
 ```
 
 **Ingredients:**
-- BED = Bed (any color)
-- COM = Composter
+- BED = Red Bed
+- COM = Composter  
 - HOP = Hopper
 - LAV = Lava Bucket
 - CHE = Chest
 - WAT = Water Bucket
 
 **Output:** 1 Iron Ingot every 3 seconds  
-**Appearance:** Lit Furnace  
+**Appearance:** Furnace with Iron Ingot item frame  
 **Storage:** 1,728 items (27 slots)
 
 ### Villager Breeder
@@ -68,14 +68,78 @@ DIR WAT DIR
 **Ingredients:**
 - WHE = Wheat Seeds
 - TOR = Torch
-- BED = Bed (any color)
+- BED = Red Bed
 - COM = Composter
 - DIR = Dirt
 - WAT = Water Bucket
 
-**Output:** 1 Villager Spawn Egg every 30 seconds  
-**Appearance:** Composter  
+**Output:** 1 Villager Spawn Egg every 8 minutes  
+**Appearance:** Composter with Villager Spawn Egg item frame  
 **Storage:** 432 spawn eggs (27 slots)
+
+### Wheat Farm
+**Recipe Pattern:**
+```
+WHE WHE WHE
+WHE COM WHE  
+WHE WHE WHE
+```
+
+**Ingredients:**
+- WHE = Wheat
+- COM = Composter
+
+**Output:** 81 Wheat every 2 minutes  
+**Appearance:** Barrel with Wheat item frame  
+**Storage:** 1,728 items (27 slots)
+
+### Carrot Farm
+**Recipe Pattern:**
+```
+CAR CAR CAR
+CAR COM CAR
+CAR CAR CAR
+```
+
+**Ingredients:**
+- CAR = Carrot
+- COM = Composter
+
+**Output:** 81 Carrots every 2 minutes  
+**Appearance:** Barrel with Carrot item frame  
+**Storage:** 1,728 items (27 slots)
+
+### Potato Farm
+**Recipe Pattern:**
+```
+POT POT POT
+POT COM POT
+POT POT POT
+```
+
+**Ingredients:**
+- POT = Potato
+- COM = Composter
+
+**Output:** 81 Potatoes every 2 minutes  
+**Appearance:** Barrel with Potato item frame  
+**Storage:** 1,728 items (27 slots)
+
+### Beetroot Farm
+**Recipe Pattern:**
+```
+BEE BEE BEE
+BEE COM BEE
+BEE BEE BEE
+```
+
+**Ingredients:**
+- BEE = Beetroot
+- COM = Composter
+
+**Output:** 81 Beetroot every 2 minutes  
+**Appearance:** Barrel with Beetroot item frame  
+**Storage:** 1,728 items (27 slots)
 
 ## Usage
 
@@ -144,6 +208,10 @@ performance:
 Individual farm types are configured in JSON files in the `generators/` directory:
 - `iron_farm.json` - Iron Farm configuration
 - `villager_breeder.json` - Villager Breeder configuration
+- `wheat_farm.json` - Wheat Farm configuration
+- `carrot_farm.json` - Carrot Farm configuration
+- `potato_farm.json` - Potato Farm configuration
+- `beetroot_farm.json` - Beetroot Farm configuration
 
 Each configuration includes:
 - Recipe pattern (3x3 grid)
@@ -166,7 +234,11 @@ plugins/VillagerFriendlyFarms/
 ├── config.yml                 # Main configuration
 ├── generators/                 # Farm type definitions
 │   ├── iron_farm.json
-│   └── villager_breeder.json
+│   ├── villager_breeder.json
+│   ├── wheat_farm.json
+│   ├── carrot_farm.json
+│   ├── potato_farm.json
+│   └── beetroot_farm.json
 ├── data/                      # Farm instance data
 │   └── generators.json
 └── backups/                   # Automatic backups

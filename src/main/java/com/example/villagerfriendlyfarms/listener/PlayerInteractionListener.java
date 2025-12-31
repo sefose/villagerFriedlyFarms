@@ -77,7 +77,27 @@ public class PlayerInteractionListener implements Listener {
             return; // Not a generator block
         }
 
-        // Cancel the event to prevent default block interaction
+        // Allow block placement when sneaking (crouching) - don't cancel the event
+        if (player.isSneaking() && player.getInventory().getItemInMainHand().getType().isBlock()) {
+            // Player is sneaking and holding a block - allow normal block placement
+            return; // Don't cancel the event, let Minecraft handle block placement
+        }
+
+        // Debug: Check if player is holding a stick and shift-clicking to debug recipes
+        if (player.isSneaking() && player.getInventory().getItemInMainHand().getType() == Material.STICK) {
+            // Debug mode - show all loaded recipes
+            player.sendMessage("§6=== DEBUG: Loaded Generator Recipes ===");
+            Map<String, GeneratorConfig> configs = plugin.getConfigManager().getAllConfigurations();
+            for (GeneratorConfig config : configs.values()) {
+                player.sendMessage("§e" + config.getName() + " §7- Block: " + config.getBlockType() + 
+                                 " - Output: " + config.getOutput().getType() + " x" + config.getOutput().getAmount() +
+                                 " every " + config.getGenerationTimeSeconds() + "s");
+            }
+            player.sendMessage("§6Total recipes loaded: " + configs.size());
+            return;
+        }
+
+        // Cancel the event to prevent default block interaction (only when not sneaking with blocks)
         event.setCancelled(true);
 
         // Get generator information from the manager
@@ -112,9 +132,13 @@ public class PlayerInteractionListener implements Listener {
         String nextItemMessage = " §8(next in " + formatElapsedTime(remainingSeconds) + ")";
         
         if (itemsToGenerate > 0) {
-            // Create a single ItemStack with the total amount to generate
+            // Calculate total items: cycles × items per cycle
+            int itemsPerCycle = config.getOutput().getAmount();
+            int totalItemsToAdd = itemsToGenerate * itemsPerCycle;
+            
+            // Create ItemStack with the correct total amount
             ItemStack outputItem = config.getOutput().clone();
-            outputItem.setAmount(itemsToGenerate);
+            outputItem.setAmount(totalItemsToAdd);
             
             // Add the stacked items to the generator
             generator.addStoredItem(outputItem);
@@ -130,12 +154,14 @@ public class PlayerInteractionListener implements Listener {
             setStoredItems(block, currentStoredItems);
             
             String timeMessage = formatElapsedTime(elapsedGenerationSeconds);
-            player.sendMessage("§aGenerated " + itemsToGenerate + " " + 
+            player.sendMessage("§aGenerated " + totalItemsToAdd + " " + 
                              formatMaterialName(config.getOutput().getType()) + "(s) " +
+                             "§7(" + itemsToGenerate + " cycles × " + itemsPerCycle + " items)" +
                              "§7(elapsed: " + timeMessage + ")" + nextItemMessage);
             
             if (plugin.getConfig().getBoolean("plugin.debug", false)) {
-                logger.info("Generated " + itemsToGenerate + " items for player " + player.getName());
+                logger.info("Generated " + totalItemsToAdd + " items (" + itemsToGenerate + 
+                           " cycles × " + itemsPerCycle + " items) for player " + player.getName());
             }
         } else if (elapsedGenerationSeconds > 0) {
             // Show elapsed time even if no full generation cycles completed
